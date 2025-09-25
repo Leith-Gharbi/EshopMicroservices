@@ -18,10 +18,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Products\DeleteProduct\" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<ProjectReference Include="..\BuildingBlocks\BuildingBlocks\BuildingBlocks.csproj" />
 	</ItemGroup>
 
