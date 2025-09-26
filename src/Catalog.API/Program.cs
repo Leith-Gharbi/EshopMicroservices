@@ -3,6 +3,8 @@
 
 
 
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ===== PHASE 1: CONFIGURATION DES SERVICES =====
@@ -30,6 +32,8 @@ builder.Services.AddMarten(options =>
 
 }).UseLightweightSessions(); // register Marten in the DI container
 
+if (builder.Environment.IsDevelopment())
+    builder.Services.InitializeMartenWith<CatalogInitialData>(); // Initialize Marten with CatalogInitialData ( pour initialiser la base de données avec des données de test en développement )
 
 builder.Services.AddExceptionHandler<CustomExceptionHandler>(); // register CustomExceptionHandler in the DI container ( pour gérer les exceptions globalement )
 
@@ -45,10 +49,12 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
+
+
 app.MapCarter(); // Map Carter endpoints ( Map tous les endpoints Carter [ tous les classes qui implement ICarterModule)
 
 
-app.UseExceptionHandler( ); // Use the exception handler middleware ( pour gérer les exceptions globalement) [ doit etre ajouté pour que AddExceptionHandler fonctionne (Appelle l’IExceptionHandler que tu as enregistré (CustomExceptionHandler dans ton cas))  ] 
+app.UseExceptionHandler(options => { }); // Use the exception handler middleware ( pour gérer les exceptions globalement) [ doit etre ajouté pour que AddExceptionHandler fonctionne (Appelle l’IExceptionHandler que tu as enregistré (CustomExceptionHandler dans ton cas))  ] 
 
 
 
