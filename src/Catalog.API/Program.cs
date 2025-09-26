@@ -1,5 +1,7 @@
 #region Before Building the app
-using BuildingBlocks.Behaviors;
+
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +21,6 @@ builder.Services.AddMediatR(config =>
 
 builder.Services.AddValidatorsFromAssembly(assembly); // register FluentValidation validators in the DI container ( Detecte tous les classes qui implémentent Abstractvalidator<T> dans l'assembly courant )
 
-
 builder.Services.AddCarter();  // register Carter in the DI container
 
 builder.Services.AddMarten(options =>
@@ -27,6 +28,9 @@ builder.Services.AddMarten(options =>
     options.Connection(builder.Configuration.GetConnectionString("Database")!);
 
 }).UseLightweightSessions(); // register Marten in the DI container
+
+
+builder.Services.AddExceptionHandler<CustomExceptionHandler>(); // register CustomExceptionHandler in the DI container ( pour gérer les exceptions globalement )
 
 #endregion
 
@@ -40,7 +44,13 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
-app.MapCarter(); // Map Carter endpoints ( Map tous les endpoints Carter
+app.MapCarter(); // Map Carter endpoints ( Map tous les endpoints Carter [ tous les classes qui implement ICarterModule)
+
+
+app.UseExceptionHandler( ); // Use the exception handler middleware ( pour gérer les exceptions globalement) [ doit etre ajouté pour que AddExceptionHandler fonctionne (Appelle l’IExceptionHandler que tu as enregistré (CustomExceptionHandler dans ton cas))  ] 
+
+
+
 #endregion
 
 // ===== DÉMARRAGE =====

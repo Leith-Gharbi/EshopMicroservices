@@ -19,7 +19,7 @@ namespace Catalog.API.Products.GetProductById
             if (product is null)
             {
                 logger.LogWarning("Product with Id {Id} not found", query.Id);
-                throw new ProductNotFoundException();
+                throw new ProductNotFoundException(query.Id);
             }
 
             logger.LogInformation("Retrieved product: {@Product}", product);

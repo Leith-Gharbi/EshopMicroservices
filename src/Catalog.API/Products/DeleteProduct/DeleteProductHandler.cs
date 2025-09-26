@@ -23,7 +23,7 @@ namespace Catalog.API.Products.DeleteProduct
             if (product is null)
             {
                 logger.LogWarning("Product with Id {Id} not found", command.Id);
-                throw new ProductNotFoundException();
+                throw new ProductNotFoundException(command.Id);
             }
             session.Delete<Product>(command.Id);
             await session.SaveChangesAsync(cancellationToken);
