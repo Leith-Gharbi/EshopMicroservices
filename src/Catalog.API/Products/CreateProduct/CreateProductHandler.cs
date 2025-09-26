@@ -1,18 +1,46 @@
 ﻿
 
 
+
+
 namespace Catalog.API.Products.CreateProduct;
 
 
 public record CreateProductCommand(string Name, List<string> Category, string Description, string ImageFile, decimal Price)
     :ICommand<CreateProductResult>;
 public record CreateProductResult(Guid Id);
-internal class CreateProductCommandHandler(IDocumentSession session)
+
+public class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
+{
+    public CreateProductCommandValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(100).WithMessage("Name is required");
+        RuleFor(x => x.Category).NotEmpty().WithMessage("Category is required"); 
+        RuleFor(x => x.Description).NotEmpty().MaximumLength(500).WithMessage("Description is required");
+        RuleFor(x => x.ImageFile).NotEmpty().MaximumLength(200).WithMessage("ImageFile is required");
+        RuleFor(x => x.Price).GreaterThan(0).WithMessage("Price must be grater than 0");
+    }
+}
+
+
+
+internal class CreateProductCommandHandler(IDocumentSession session ,IValidator<CreateProductCommand> validator )
     : ICommandHandler<CreateProductCommand, CreateProductResult>
 {
     public async Task<CreateProductResult> Handle(CreateProductCommand command, CancellationToken cancellationToken)
     {
+
+
         // Bussiness logic to create a product
+
+        var resut = await validator.ValidateAsync(command, cancellationToken);
+        var errors = resut.Errors.Select(x=>x.ErrorMessage).ToList();
+        if(errors.Any())
+        {
+            throw new ValidationException(errors.FirstOrDefault());
+        }
+
+
 
         // cretae Product enity from command object 
         Product product = new Product

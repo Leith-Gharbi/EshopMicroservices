@@ -16,7 +16,7 @@ namespace Catalog.API.Products.DeleteProduct
                 logger.LogWarning("Product with Id {Id} not found", command.Id);
                 throw new ProductNotFoundException();
             }
-            session.Delete(product.Id);
+            session.Delete<Product>(command.Id);
             await session.SaveChangesAsync(cancellationToken);
             return new DeleteProductResult(true);
         }

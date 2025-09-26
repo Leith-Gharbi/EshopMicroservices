@@ -6,6 +6,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container DI
 builder.Services.AddCarter();  // register Carter in the DI container
 builder.Services.AddMediatR(config => config.RegisterServicesFromAssembly(typeof(Program).Assembly)); // register MediatR in the DI container
+
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly); // register FluentValidation validators in the DI container ( Detecte tous les classes qui implémentent Abstractvalidator<T> dans l'assembly courant )
 builder.Services.AddMarten(options =>
 {
     options.Connection(builder.Configuration.GetConnectionString("Database")!);
