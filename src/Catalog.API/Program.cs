@@ -5,6 +5,9 @@
 
 
 
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ===== PHASE 1: CONFIGURATION DES SERVICES =====
@@ -37,6 +40,8 @@ if (builder.Environment.IsDevelopment())
 
 builder.Services.AddExceptionHandler<CustomExceptionHandler>(); // register CustomExceptionHandler in the DI container ( pour gérer les exceptions globalement )
 
+
+builder.Services.AddHealthChecks().AddNpgSql(builder.Configuration.GetConnectionString("Database")!); // register HealthChecks in the DI container ( pour vérifier la santé de l'application )
 #endregion
 
 // ===== CONSTRUCTION DE L'APPLICATION =====
@@ -56,7 +61,11 @@ app.MapCarter(); // Map Carter endpoints ( Map tous les endpoints Carter [ tous 
 
 app.UseExceptionHandler(options => { }); // Use the exception handler middleware ( pour gérer les exceptions globalement) [ doit etre ajouté pour que AddExceptionHandler fonctionne (Appelle l’IExceptionHandler que tu as enregistré (CustomExceptionHandler dans ton cas))  ] 
 
+app.UseHealthChecks("/health" , new HealthCheckOptions 
+{ 
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 
+} ); // Map the health check endpoint ( pour vérifier la santé de l'application)
 
 #endregion
 
