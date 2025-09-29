@@ -42,6 +42,7 @@ builder.Services.AddExceptionHandler<CustomExceptionHandler>(); // register Cust
 
 
 builder.Services.AddHealthChecks().AddNpgSql(builder.Configuration.GetConnectionString("Database")!); // register HealthChecks in the DI container ( pour vérifier la santé de l'application )
+
 #endregion
 
 // ===== CONSTRUCTION DE L'APPLICATION =====
