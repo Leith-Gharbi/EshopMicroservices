@@ -23,6 +23,5 @@ namespace Basket.API.Basket.DeleteBasket
             .WithDescription("Delete Basket");
         }
     }
-    {
-    }
+ 
 }

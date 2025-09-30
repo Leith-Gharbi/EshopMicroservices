@@ -9,7 +9,7 @@ var assembly = typeof(Program).Assembly; // Get the current assembly ( Basket.AP
 #region Add services to the container.
 
 builder.Services.AddCarter();  // register Carter in the DI container
-
+builder.Services.AddScoped<IBasketRepository, BasketRepository>(); // register BasketRepository in the DI container ( pour gérer les opérations CRUD sur les objets ShoppingCart )
 builder.Services.AddMarten(options =>
 {
     options.Connection(builder.Configuration.GetConnectionString("Database")!);
