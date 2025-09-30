@@ -2,6 +2,7 @@
 
 
 
+using BuildingBlocks.Exceptions.Handler;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +25,8 @@ builder.Services.AddMediatR(config =>
 }
 ); // register MediatR in the DI container
 
+builder.Services.AddExceptionHandler<CustomExceptionHandler>(); // register CustomExceptionHandler in the DI container ( pour gérer les exceptions globalement )
+
 #endregion
 
 
@@ -33,7 +36,7 @@ var app = builder.Build();
 
 
 app.MapCarter(); // Map Carter endpoints ( Map tous les endpoints Carter [ tous les classes qui implement ICarterModule)
-
+app.UseExceptionHandler(options => { }); // Use the exception handler middleware ( pour gérer les exceptions globalement) [ doit etre ajouté pour que AddExceptionHandler fonctionne (Appelle l’IExceptionHandler que tu as enregistré (CustomExceptionHandler dans ton cas))  ]
 #endregion
 
 
