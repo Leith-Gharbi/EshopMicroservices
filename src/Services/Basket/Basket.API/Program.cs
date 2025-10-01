@@ -11,6 +11,21 @@ var assembly = typeof(Program).Assembly; // Get the current assembly ( Basket.AP
 
 builder.Services.AddCarter();  // register Carter in the DI container
 builder.Services.AddScoped<IBasketRepository, BasketRepository>(); // register BasketRepository in the DI container ( pour gérer les opérations CRUD sur les objets ShoppingCart )
+builder.Services.Decorate<IBasketRepository, CachedBasketRepository>();
+
+////builder.Services.AddScoped<IBasketRepository>(provider =>
+////{
+////    var basketRepository = provider.GetRequiredService<IBasketRepository>();
+////    return new CachedBasketRepository(basketRepository, provider.GetRequiredService<IDistributedCache>());
+////});
+///
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+});
+
+
 builder.Services.AddMarten(options =>
 {
     options.Connection(builder.Configuration.GetConnectionString("Database")!);
