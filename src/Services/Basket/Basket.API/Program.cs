@@ -1,10 +1,4 @@
 
-
-
-
-using BuildingBlocks.Exceptions.Handler;
-using Microsoft.Extensions.Options;
-
 var builder = WebApplication.CreateBuilder(args);
 var assembly = typeof(Program).Assembly; // Get the current assembly ( Basket.API )
 #region Add services to the container.
@@ -42,6 +36,9 @@ builder.Services.AddMediatR(config =>
 
 builder.Services.AddExceptionHandler<CustomExceptionHandler>(); // register CustomExceptionHandler in the DI container ( pour gérer les exceptions globalement )
 
+builder.Services.AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetConnectionString("Database")!)
+    .AddRedis(builder.Configuration.GetConnectionString("Redis")!);
 #endregion
 
 
@@ -52,6 +49,14 @@ var app = builder.Build();
 
 app.MapCarter(); // Map Carter endpoints ( Map tous les endpoints Carter [ tous les classes qui implement ICarterModule)
 app.UseExceptionHandler(options => { }); // Use the exception handler middleware ( pour gérer les exceptions globalement) [ doit etre ajouté pour que AddExceptionHandler fonctionne (Appelle l’IExceptionHandler que tu as enregistré (CustomExceptionHandler dans ton cas))  ]
+
+app.UseHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+
+}); // Map the health check endpoint ( pour vérifier la santé de l'application)
+
+
 #endregion
 
 
