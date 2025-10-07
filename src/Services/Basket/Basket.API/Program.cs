@@ -1,31 +1,11 @@
 
+using Discount.Grpc;
+
 var builder = WebApplication.CreateBuilder(args);
 var assembly = typeof(Program).Assembly; // Get the current assembly ( Basket.API )
 #region Add services to the container.
 
 builder.Services.AddCarter();  // register Carter in the DI container
-builder.Services.AddScoped<IBasketRepository, BasketRepository>(); // register BasketRepository in the DI container ( pour gérer les opérations CRUD sur les objets ShoppingCart )
-builder.Services.Decorate<IBasketRepository, CachedBasketRepository>();
-
-////builder.Services.AddScoped<IBasketRepository>(provider =>
-////{
-////    var basketRepository = provider.GetRequiredService<IBasketRepository>();
-////    return new CachedBasketRepository(basketRepository, provider.GetRequiredService<IDistributedCache>());
-////});
-///
-
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-});
-
-
-builder.Services.AddMarten(options =>
-{
-    options.Connection(builder.Configuration.GetConnectionString("Database")!);
-    options.Schema.For<ShoppingCart>().Identity(x => x.UserName); // Register the ShoppingCart document ( pour que Marten sache comment stocker et récupérer les objets ShoppingCart )
-}).UseLightweightSessions();
-
 builder.Services.AddMediatR(config =>
 {
     config.RegisterServicesFromAssembly(assembly); // register MediatR handlers in the DI container ( Detecte tous les classes qui implémentent IRequestHandler<T> dans l'assembly courant )
@@ -34,6 +14,46 @@ builder.Services.AddMediatR(config =>
 }
 ); // register MediatR in the DI container
 
+
+#endregion
+
+
+#region Data services
+
+builder.Services.AddMarten(options =>
+{
+    options.Connection(builder.Configuration.GetConnectionString("Database")!);
+    options.Schema.For<ShoppingCart>().Identity(x => x.UserName); // Register the ShoppingCart document ( pour que Marten sache comment stocker et récupérer les objets ShoppingCart )
+}).UseLightweightSessions();
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+});
+
+
+builder.Services.AddScoped<IBasketRepository, BasketRepository>(); // register BasketRepository in the DI container ( pour gérer les opérations CRUD sur les objets ShoppingCart )
+builder.Services.Decorate<IBasketRepository, CachedBasketRepository>();
+////builder.Services.AddScoped<IBasketRepository>(provider =>
+////{
+////    var basketRepository = provider.GetRequiredService<IBasketRepository>();
+////    return new CachedBasketRepository(basketRepository, provider.GetRequiredService<IDistributedCache>());
+////});
+///
+
+#endregion
+
+
+#region Grpc Services
+
+builder.Services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(options =>
+{
+    options.Address = new Uri(builder.Configuration["GrpcSettings:DiscountUrl"]!);
+});
+
+#endregion
+
+#region Cross-Cutting Services
 builder.Services.AddExceptionHandler<CustomExceptionHandler>(); // register CustomExceptionHandler in the DI container ( pour gérer les exceptions globalement )
 
 builder.Services.AddHealthChecks()
