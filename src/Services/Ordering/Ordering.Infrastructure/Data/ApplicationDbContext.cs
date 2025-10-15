@@ -1,0 +1,33 @@
+﻿
+using Ordering.Domain.Models;
+using System.Reflection;
+
+namespace Ordering.Infrastructure.Data
+{
+    public class ApplicationDbContext : DbContext
+    {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+        {
+
+        }
+        public DbSet<Customer> Customers => Set<Customer>();
+        public DbSet<Product> Products => Set<Product>();
+        public DbSet<Order> Orders => Set<Order>();
+        public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+
+
+
+        protected override void OnModelCreating(ModelBuilder builder)
+
+        {
+            /*
+              Chercher automatiquement toutes les configurations d’entités
+              (les classes IEntityTypeConfiguration<T>) dans ton projet,
+              et les appliquer sans que tu aies à les enregistrer une par une. 
+            */ 
+            builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+            base.OnModelCreating(builder);
+        }
+
+    }
+}
