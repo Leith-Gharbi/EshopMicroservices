@@ -1,4 +1,6 @@
 ﻿
+using Ordering.Infrastructure.Data.Interceptors;
+
 namespace Ordering.Infrastructure
 {
     public static class DependencyInjection
@@ -8,6 +10,7 @@ namespace Ordering.Infrastructure
             var connectionString = configuration.GetConnectionString("Database");
             services.AddDbContext<ApplicationDbContext>((sp, options) =>
             {
+                options.AddInterceptors(new AuditableEntityInterceptor());
                 options.UseSqlServer(connectionString);
             });
             return services;
