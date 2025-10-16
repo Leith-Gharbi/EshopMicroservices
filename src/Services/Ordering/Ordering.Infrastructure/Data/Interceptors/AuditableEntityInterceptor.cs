@@ -20,7 +20,7 @@ namespace Ordering.Infrastructure.Data.Interceptors
 
         private static void UpdateEntities(DbContext? context)
         {
-            if (context == null) return;
+             if (context == null) return;
             var entries = context.ChangeTracker.Entries<IEntity>();
             var utcNow = DateTime.UtcNow;
             foreach (var entry in entries)
