@@ -1,4 +1,5 @@
 
+using BuildingBlocks.Messaging.MassTransit;
 using Discount.Grpc;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,7 +14,6 @@ builder.Services.AddMediatR(config =>
     config.AddOpenBehavior(typeof(LoggingBehavior<,>));
 }
 ); // register MediatR in the DI container
-
 
 #endregion
 
@@ -67,6 +67,8 @@ builder.Services.AddExceptionHandler<CustomExceptionHandler>(); // register Cust
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("Database")!)
     .AddRedis(builder.Configuration.GetConnectionString("Redis")!);
+
+builder.Services.AddMessageBroker(builder.Configuration); // register MassTransit in the DI container ( pour la communication asynchrone entre les microservices via RabbitMQ )
 #endregion
 
 
