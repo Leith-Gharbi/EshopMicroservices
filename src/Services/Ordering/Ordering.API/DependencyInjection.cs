@@ -1,4 +1,5 @@
-﻿using Carter;
+﻿using BuildingBlocks.Exceptions.Handler;
+using Carter;
 
 namespace Ordering.API
 {
@@ -9,6 +10,7 @@ namespace Ordering.API
         {
 
             services.AddCarter();
+            services.AddExceptionHandler<CustomExceptionHandler>();
             return services;
         }
 
@@ -18,6 +20,7 @@ namespace Ordering.API
 
 
             app.MapCarter();
+            app.UseExceptionHandler(opt => { }); // Use the exception handler middleware ( pour gérer les exceptions globalement) [ doit etre ajouté pour que AddExceptionHandler fonctionne (Appelle l’IExceptionHandler que tu as enregistré (CustomExceptionHandler dans ton cas))  ]
 
             return app;
         }
