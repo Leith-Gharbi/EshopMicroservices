@@ -1,13 +1,17 @@
-﻿using Ordering.Domain.Abstractions;
+﻿using MassTransit;
+using Ordering.Domain.Abstractions;
 
 namespace Ordering.Application.Orders.EventHandlers.Domain
 {
-    public class OrderCreatedEventHandler(ILogger<OrderCreatedEventHandler> logger) : INotificationHandler<OrderCreatedEvent>
+    public class OrderCreatedEventHandler(ILogger<OrderCreatedEventHandler> logger ,IPublishEndpoint publishEndpoint) : INotificationHandler<OrderCreatedEvent>
     {
-        public Task Handle(OrderCreatedEvent domainEvent, CancellationToken cancellationToken)
+        public async Task Handle(OrderCreatedEvent domainEvent, CancellationToken cancellationToken)
         {
             logger.LogInformation("Domain Event handled: {DomainEvent}", domainEvent.GetType().Name);
-            return Task.CompletedTask;
+
+            var orderCreatedIntergrationEvent = domainEvent.order.ToOrderDto();
+
+            await publishEndpoint.Publish(orderCreatedIntergrationEvent, cancellationToken);
         }
     }
 }
