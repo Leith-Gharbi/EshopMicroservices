@@ -22,6 +22,5 @@ namespace Basket.API.Basket.CheckoutBasket
             .WithDescription("Checkout Basket");
         }
     }
-    {
-    }
+   
 }
