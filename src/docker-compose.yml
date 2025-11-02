@@ -6,7 +6,7 @@ services:
   distributedcache:
     image: redis
   orderdb:
-    image: mcr.microsoft.com/mssql/server
+      image: mcr.microsoft.com/mssql/server:2022-latest
 
   messagebroker:
     image: rabbitmq:management
@@ -36,6 +36,11 @@ services:
     build:
       context: .
       dockerfile: Services/Ordering/Ordering.API/Dockerfile
+  yarpapigateway:
+    image: ${DOCKER_REGISTRY-}yarpapigateway
+    build:
+      context: .
+      dockerfile: ApiGateways/YarpApiGateway/Dockerfile
 
 volumes:
   postgres_catalog:
