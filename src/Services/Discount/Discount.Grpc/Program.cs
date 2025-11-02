@@ -2,8 +2,12 @@
 using Discount.Grpc.Data;
 using Discount.Grpc.Services;
 using Microsoft.EntityFrameworkCore;
+using BuildingBlocks.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Serilog logging with Elasticsearch, File, and Console sinks
+builder.AddSerilogLogging();
 
 // Add services to the container.
 builder.Services.AddGrpc();

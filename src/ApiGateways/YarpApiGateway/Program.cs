@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.RateLimiting;
+using BuildingBlocks.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Serilog logging with Elasticsearch, File, and Console sinks
+builder.AddSerilogLogging();
 
 
 // Add services to the container.

@@ -1,15 +1,19 @@
 
 using BuildingBlocks.Messaging.MassTransit;
+using BuildingBlocks.Logging;
 using Discount.Grpc;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Serilog logging with Elasticsearch, File, and Console sinks
+builder.AddSerilogLogging();
 var assembly = typeof(Program).Assembly; // Get the current assembly ( Basket.API )
 #region Add services to the container.
 
 builder.Services.AddCarter();  // register Carter in the DI container
 builder.Services.AddMediatR(config =>
 {
-    config.RegisterServicesFromAssembly(assembly); // register MediatR handlers in the DI container ( Detecte tous les classes qui implémentent IRequestHandler<T> dans l'assembly courant )
+    config.RegisterServicesFromAssembly(assembly); // register MediatR handlers in the DI container ( Detecte tous les classes qui implï¿½mentent IRequestHandler<T> dans l'assembly courant )
     config.AddOpenBehavior(typeof(ValidationBehavior<,>));
     config.AddOpenBehavior(typeof(LoggingBehavior<,>));
 }
@@ -23,7 +27,7 @@ builder.Services.AddMediatR(config =>
 builder.Services.AddMarten(options =>
 {
     options.Connection(builder.Configuration.GetConnectionString("Database")!);
-    options.Schema.For<ShoppingCart>().Identity(x => x.UserName); // Register the ShoppingCart document ( pour que Marten sache comment stocker et récupérer les objets ShoppingCart )
+    options.Schema.For<ShoppingCart>().Identity(x => x.UserName); // Register the ShoppingCart document ( pour que Marten sache comment stocker et rï¿½cupï¿½rer les objets ShoppingCart )
 }).UseLightweightSessions();
 
 builder.Services.AddStackExchangeRedisCache(options =>
@@ -32,7 +36,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 
 
-builder.Services.AddScoped<IBasketRepository, BasketRepository>(); // register BasketRepository in the DI container ( pour gérer les opérations CRUD sur les objets ShoppingCart )
+builder.Services.AddScoped<IBasketRepository, BasketRepository>(); // register BasketRepository in the DI container ( pour gï¿½rer les opï¿½rations CRUD sur les objets ShoppingCart )
 builder.Services.Decorate<IBasketRepository, CachedBasketRepository>();
 ////builder.Services.AddScoped<IBasketRepository>(provider =>
 ////{
@@ -62,7 +66,7 @@ builder.Services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(
 #endregion
 
 #region Cross-Cutting Services
-builder.Services.AddExceptionHandler<CustomExceptionHandler>(); // register CustomExceptionHandler in the DI container ( pour gérer les exceptions globalement )
+builder.Services.AddExceptionHandler<CustomExceptionHandler>(); // register CustomExceptionHandler in the DI container ( pour gï¿½rer les exceptions globalement )
 
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("Database")!)
@@ -78,13 +82,13 @@ var app = builder.Build();
 
 
 app.MapCarter(); // Map Carter endpoints ( Map tous les endpoints Carter [ tous les classes qui implement ICarterModule)
-app.UseExceptionHandler(options => { }); // Use the exception handler middleware ( pour gérer les exceptions globalement) [ doit etre ajouté pour que AddExceptionHandler fonctionne (Appelle l’IExceptionHandler que tu as enregistré (CustomExceptionHandler dans ton cas))  ]
+app.UseExceptionHandler(options => { }); // Use the exception handler middleware ( pour gï¿½rer les exceptions globalement) [ doit etre ajoutï¿½ pour que AddExceptionHandler fonctionne (Appelle lï¿½IExceptionHandler que tu as enregistrï¿½ (CustomExceptionHandler dans ton cas))  ]
 
 app.UseHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 
-}); // Map the health check endpoint ( pour vérifier la santé de l'application)
+}); // Map the health check endpoint ( pour vï¿½rifier la santï¿½ de l'application)
 
 
 #endregion
