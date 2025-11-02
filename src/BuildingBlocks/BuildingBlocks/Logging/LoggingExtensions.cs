@@ -61,8 +61,8 @@ public static class LoggingExtensions
 
         var options = new ElasticsearchSinkOptions(new Uri(elasticsearchUrl))
         {
-            AutoRegisterTemplate = true,  //→ Serilog crée automatiquement le template d’index dans Elastic.
-            AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv7,
+            AutoRegisterTemplate = true,  //→ Serilog crée automatiquement le template d'index dans Elastic.
+            AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv8,
             IndexFormat = $"eshop-microservices-{applicationName.ToLower()}-{environment.ToLower()}-{DateTime.UtcNow:yyyy-MM}",
             NumberOfShards = 2,
             NumberOfReplicas = 1,
@@ -78,6 +78,7 @@ public static class LoggingExtensions
             Period = TimeSpan.FromSeconds(2),
             // Custom fields to be logged
             ModifyConnectionSettings = x => x
+                .ServerCertificateValidationCallback((o, certificate, chain, errors) => true)
                 .BasicAuthentication(
                     configuration["ElasticConfiguration:Username"],
                     configuration["ElasticConfiguration:Password"]
