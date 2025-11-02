@@ -59,7 +59,8 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
-
+// Add HTTP logging middleware for Elasticsearch enrichment
+app.UseHttpLogging();
 
 app.MapCarter(); // Map Carter endpoints ( Map tous les endpoints Carter [ tous les classes qui implement ICarterModule)
 
