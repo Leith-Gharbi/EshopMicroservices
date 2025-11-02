@@ -1,4 +1,5 @@
 ﻿using BuildingBlocks.Exceptions.Handler;
+using BuildingBlocks.Logging;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
@@ -20,6 +21,8 @@ namespace Ordering.API
         public static WebApplication useApiServices(this WebApplication app)
         {
 
+            // Add HTTP logging middleware for Elasticsearch enrichment
+            app.UseHttpLogging();
 
             app.MapCarter();
             app.UseExceptionHandler(opt => { }); // Use the exception handler middleware ( pour gérer les exceptions globalement) [ doit etre ajouté pour que AddExceptionHandler fonctionne (Appelle l’IExceptionHandler que tu as enregistré (CustomExceptionHandler dans ton cas))  ]
