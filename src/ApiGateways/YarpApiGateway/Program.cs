@@ -28,7 +28,7 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 // Add HTTP logging middleware for Elasticsearch enrichment
-app.UseHttpLogging();
+app.UseElasticsearchHttpLogging();
 
 app.UseRateLimiter();
 

@@ -12,7 +12,7 @@ public static class HttpLoggingExtensions
     /// </summary>
     /// <param name="app">The application builder</param>
     /// <returns>The application builder for chaining</returns>
-    public static IApplicationBuilder UseHttpLogging(this IApplicationBuilder app)
+    public static IApplicationBuilder UseElasticsearchHttpLogging(this IApplicationBuilder app)
     {
         return app.UseMiddleware<HttpLoggingMiddleware>();
     }

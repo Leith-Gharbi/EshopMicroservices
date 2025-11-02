@@ -22,7 +22,7 @@ namespace Ordering.API
         {
 
             // Add HTTP logging middleware for Elasticsearch enrichment
-            app.UseHttpLogging();
+            app.UseElasticsearchHttpLogging();
 
             app.MapCarter();
             app.UseExceptionHandler(opt => { }); // Use the exception handler middleware ( pour gérer les exceptions globalement) [ doit etre ajouté pour que AddExceptionHandler fonctionne (Appelle l’IExceptionHandler que tu as enregistré (CustomExceptionHandler dans ton cas))  ]
