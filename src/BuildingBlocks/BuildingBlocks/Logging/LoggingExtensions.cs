@@ -77,11 +77,19 @@ public static class LoggingExtensions
             BatchPostingLimit = 50, //→ Envoie les logs par paquets de 50 toutes les 2 secondes (meilleure perf).
             Period = TimeSpan.FromSeconds(2),
             // Custom fields to be logged
-            ModifyConnectionSettings = x => x
-                .BasicAuthentication(
-                    configuration["ElasticConfiguration:Username"],
-                    configuration["ElasticConfiguration:Password"]
-                )
+            ModifyConnectionSettings = x =>
+            {
+                var username = configuration["ElasticConfiguration:Username"];
+                var password = configuration["ElasticConfiguration:Password"];
+
+                // Only apply BasicAuthentication if credentials are provided
+                if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+                {
+                    return x.BasicAuthentication(username, password);
+                }
+
+                return x;
+            }
         };
 
         return options;
