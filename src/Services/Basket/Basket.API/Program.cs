@@ -1,6 +1,7 @@
 
 using BuildingBlocks.Messaging.MassTransit;
 using BuildingBlocks.Logging;
+using BuildingBlocks.Resilience;
 using Discount.Grpc;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -54,13 +55,22 @@ builder.Services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(
 {
     options.Address = new Uri(builder.Configuration["GrpcSettings:DiscountUrl"]!);
 })
-    .ConfigurePrimaryHttpMessageHandler(() =>
+.ConfigurePrimaryHttpMessageHandler(() =>
 {
     var handler = new HttpClientHandler
     {
+        // TODO: Replace with proper certificate validation in production
         ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
     };
     return handler;
+})
+.AddGrpcResilience(serviceName: "DiscountService") // Add Polly resilience policies for gRPC
+.ConfigureChannel(options =>
+{
+    // gRPC-specific configurations
+    options.MaxRetryAttempts = 3;
+    options.MaxRetryBufferSize = 1024 * 1024; // 1MB
+    options.MaxRetryBufferPerCallSize = 512 * 1024; // 512KB
 });
 
 #endregion

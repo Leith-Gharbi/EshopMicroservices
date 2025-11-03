@@ -1,4 +1,5 @@
 using BuildingBlocks.Logging;
+using BuildingBlocks.Resilience;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,21 +9,27 @@ builder.AddSerilogLogging();
 // Add services to the container.
 builder.Services.AddRazorPages();
 
+// Add Refit HTTP clients with resilience policies (Polly)
 builder.Services.AddRefitClient<ICatalogService>()
     .ConfigureHttpClient(c =>
     {
         c.BaseAddress = new Uri(builder.Configuration["ApiSettings:GatewayAddress"]!);
-    });
+    })
+    .AddStandardResilience(serviceName: "CatalogService");
+
 builder.Services.AddRefitClient<IBasketService>()
     .ConfigureHttpClient(c =>
     {
         c.BaseAddress = new Uri(builder.Configuration["ApiSettings:GatewayAddress"]!);
-    });
+    })
+    .AddStandardResilience(serviceName: "BasketService");
+
 builder.Services.AddRefitClient<IOrderingService>()
     .ConfigureHttpClient(c =>
     {
         c.BaseAddress = new Uri(builder.Configuration["ApiSettings:GatewayAddress"]!);
-    });
+    })
+    .AddCriticalResilience(serviceName: "OrderingService"); // Critical operations use stricter policies
 
 var app = builder.Build();
 
