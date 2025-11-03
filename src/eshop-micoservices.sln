@@ -43,6 +43,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WebApps", "WebApps", "{D17B
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shopping.Web", "WebApps\Shopping.Web\Shopping.Web.csproj", "{150E9155-17A9-4A06-9DD5-DA77EBD88D84}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthDeck.Web", "WebApps\HealthDeck.Web\HealthDeck.Web.csproj", "{CC18BE1C-93BD-4E36-AD7B-B532FE6FA54B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -97,6 +99,10 @@ Global
 		{150E9155-17A9-4A06-9DD5-DA77EBD88D84}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{150E9155-17A9-4A06-9DD5-DA77EBD88D84}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{150E9155-17A9-4A06-9DD5-DA77EBD88D84}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC18BE1C-93BD-4E36-AD7B-B532FE6FA54B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC18BE1C-93BD-4E36-AD7B-B532FE6FA54B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC18BE1C-93BD-4E36-AD7B-B532FE6FA54B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC18BE1C-93BD-4E36-AD7B-B532FE6FA54B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -117,6 +123,7 @@ Global
 		{EA7F963B-456F-417C-ADB1-13F8E889961E} = {3FF583EA-5F4F-4649-B48F-D296FC86CCA2}
 		{4F1B484F-86D8-4AE2-9E06-4E0FD64089C6} = {35B5E131-C837-43F5-8745-248A2A4C0ABD}
 		{150E9155-17A9-4A06-9DD5-DA77EBD88D84} = {D17BF6C2-DB5B-44F0-A04D-B955059093A3}
+		{CC18BE1C-93BD-4E36-AD7B-B532FE6FA54B} = {D17BF6C2-DB5B-44F0-A04D-B955059093A3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {459FC2D2-6029-4109-9B82-012C3B07C215}
