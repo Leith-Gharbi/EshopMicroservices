@@ -180,12 +180,14 @@ services:
       - HealthChecksUI__HealthChecks__0__Uri=http://catalog.api:8080/health
       - HealthChecksUI__HealthChecks__1__Name=Basket API
       - HealthChecksUI__HealthChecks__1__Uri=http://basket.api:8080/health
-      - HealthChecksUI__HealthChecks__2__Name=Discount gRPC
-      - HealthChecksUI__HealthChecks__2__Uri=http://discount.grpc:8080/health
+      # - HealthChecksUI__HealthChecks__2__Name=Discount gRPC
+      # - HealthChecksUI__HealthChecks__2__Uri=http://discount.grpc:8080/health
       - HealthChecksUI__HealthChecks__3__Name=Ordering API
       - HealthChecksUI__HealthChecks__3__Uri=http://ordering.api:8080/health
       - HealthChecksUI__HealthChecks__4__Name=API Gateway (YARP)
       - HealthChecksUI__HealthChecks__4__Uri=http://yarpapigateway:8080/health
+      # - HealthChecksUI__HealthChecks__5__Name=Shopping Web
+      # - HealthChecksUI__HealthChecks__5__Uri=http://yarpapigateway:8080/health
       - HealthChecksUI__EvaluationTimeInSeconds=10
       - HealthChecksUI__MinimumSecondsBetweenFailureNotifications=60
     depends_on:
