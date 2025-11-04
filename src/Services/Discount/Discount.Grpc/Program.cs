@@ -3,6 +3,8 @@ using Discount.Grpc.Data;
 using Discount.Grpc.Services;
 using Microsoft.EntityFrameworkCore;
 using BuildingBlocks.Logging;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,9 +14,12 @@ builder.AddSerilogLogging();
 // Add services to the container.
 builder.Services.AddGrpc();
 
-
-builder.Services.AddDbContext<DiscountContext>(opts => 
+builder.Services.AddDbContext<DiscountContext>(opts =>
 opts.UseSqlite(builder.Configuration.GetConnectionString("Database")));
+
+// Add Health Checks
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<DiscountContext>();
 
 
 var app = builder.Build();
@@ -27,5 +32,11 @@ app.UseElasticsearchHttpLogging();
 
 app.MapGrpcService<DiscountService>();
 app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
+
+// Map Health Check endpoint
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
 
 app.Run();
