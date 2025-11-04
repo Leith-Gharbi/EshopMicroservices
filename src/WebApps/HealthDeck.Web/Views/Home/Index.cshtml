@@ -1,8 +1,293 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Health Check Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<style>
+    .health-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        border: none;
+        border-radius: 10px;
+    }
+    .health-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+    .icon-large {
+        font-size: 3rem;
+    }
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px 0;
+        margin-bottom: 40px;
+        border-radius: 10px;
+    }
+    .service-badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin: 5px;
+    }
+    .badge-api { background-color: #3498db; color: white; }
+    .badge-grpc { background-color: #2ecc71; color: white; }
+    .badge-gateway { background-color: #e74c3c; color: white; }
+    .badge-web { background-color: #f39c12; color: white; }
+</style>
+
+<div class="container-fluid">
+    <div class="dashboard-header text-center">
+        <h1 class="display-3">
+            <i class="bi bi-heart-pulse-fill me-3"></i>
+            EShop Microservices Health Dashboard
+        </h1>
+        <p class="lead mt-3">Real-time monitoring of all microservices</p>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-lg health-card" onclick="window.location.href='/healthchecks-ui'">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-speedometer2 icon-large text-primary mb-3"></i>
+                    <h2 class="card-title">View Live Health Checks</h2>
+                    <p class="card-text text-muted">Click here to access the comprehensive health monitoring dashboard</p>
+                    <a href="/healthchecks-ui" class="btn btn-primary btn-lg mt-3">
+                        <i class="bi bi-box-arrow-up-right me-2"></i>
+                        Open Health Checks UI
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="text-center mb-4">
+                <i class="bi bi-diagram-3-fill me-2"></i>
+                Monitored Services
+            </h3>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Catalog API -->
+        <div class="col-md-4">
+            <div class="card shadow health-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-shop icon-large text-info me-3"></i>
+                        <div>
+                            <h5 class="card-title mb-1">Catalog API</h5>
+                            <span class="service-badge badge-api">REST API</span>
+                        </div>
+                    </div>
+                    <p class="card-text text-muted">Product catalog management service</p>
+                    <small class="text-muted">
+                        <i class="bi bi-link-45deg"></i>
+                        https://localhost:5050/health
+                    </small>
+                    <div class="mt-3">
+                        <span class="badge bg-secondary"><i class="bi bi-database"></i> PostgreSQL</span>
+                        <span class="badge bg-secondary"><i class="bi bi-box"></i> Marten</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Basket API -->
+        <div class="col-md-4">
+            <div class="card shadow health-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-cart icon-large text-success me-3"></i>
+                        <div>
+                            <h5 class="card-title mb-1">Basket API</h5>
+                            <span class="service-badge badge-api">REST API</span>
+                        </div>
+                    </div>
+                    <p class="card-text text-muted">Shopping cart management service</p>
+                    <small class="text-muted">
+                        <i class="bi bi-link-45deg"></i>
+                        https://localhost:5051/health
+                    </small>
+                    <div class="mt-3">
+                        <span class="badge bg-secondary"><i class="bi bi-database"></i> PostgreSQL</span>
+                        <span class="badge bg-secondary"><i class="bi bi-lightning-charge"></i> Redis</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Discount gRPC -->
+        <div class="col-md-4">
+            <div class="card shadow health-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-percent icon-large text-warning me-3"></i>
+                        <div>
+                            <h5 class="card-title mb-1">Discount gRPC</h5>
+                            <span class="service-badge badge-grpc">gRPC</span>
+                        </div>
+                    </div>
+                    <p class="card-text text-muted">Discount coupon service</p>
+                    <small class="text-muted">
+                        <i class="bi bi-link-45deg"></i>
+                        https://localhost:5052/health
+                    </small>
+                    <div class="mt-3">
+                        <span class="badge bg-secondary"><i class="bi bi-database"></i> SQLite</span>
+                        <span class="badge bg-secondary"><i class="bi bi-gear"></i> EF Core</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ordering API -->
+        <div class="col-md-4">
+            <div class="card shadow health-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-receipt icon-large text-danger me-3"></i>
+                        <div>
+                            <h5 class="card-title mb-1">Ordering API</h5>
+                            <span class="service-badge badge-api">REST API</span>
+                        </div>
+                    </div>
+                    <p class="card-text text-muted">Order management service</p>
+                    <small class="text-muted">
+                        <i class="bi bi-link-45deg"></i>
+                        https://localhost:5053/health
+                    </small>
+                    <div class="mt-3">
+                        <span class="badge bg-secondary"><i class="bi bi-database"></i> SQL Server</span>
+                        <span class="badge bg-secondary"><i class="bi bi-layers"></i> Clean Architecture</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Gateway -->
+        <div class="col-md-4">
+            <div class="card shadow health-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-hdd-network icon-large text-primary me-3"></i>
+                        <div>
+                            <h5 class="card-title mb-1">API Gateway</h5>
+                            <span class="service-badge badge-gateway">Gateway</span>
+                        </div>
+                    </div>
+                    <p class="card-text text-muted">YARP reverse proxy with rate limiting</p>
+                    <small class="text-muted">
+                        <i class="bi bi-link-45deg"></i>
+                        https://localhost:7238/health
+                    </small>
+                    <div class="mt-3">
+                        <span class="badge bg-secondary"><i class="bi bi-arrows-angle-expand"></i> YARP</span>
+                        <span class="badge bg-secondary"><i class="bi bi-shield-check"></i> Rate Limit</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shopping Web -->
+        <div class="col-md-4">
+            <div class="card shadow health-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-globe icon-large text-secondary me-3"></i>
+                        <div>
+                            <h5 class="card-title mb-1">Shopping Web</h5>
+                            <span class="service-badge badge-web">Web UI</span>
+                        </div>
+                    </div>
+                    <p class="card-text text-muted">Frontend web application (Razor Pages)</p>
+                    <small class="text-muted">
+                        <i class="bi bi-link-45deg"></i>
+                        https://localhost:7005/health
+                    </small>
+                    <div class="mt-3">
+                        <span class="badge bg-secondary"><i class="bi bi-file-earmark-code"></i> Razor Pages</span>
+                        <span class="badge bg-secondary"><i class="bi bi-arrow-repeat"></i> Refit</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-info-circle me-2"></i>
+                        About This Dashboard
+                    </h5>
+                    <p class="card-text">
+                        This Health Check Dashboard monitors all microservices in the EShop solution.
+                        The dashboard automatically polls each service every 10 seconds to verify their health status.
+                    </p>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle-fill text-success me-2 fs-4"></i>
+                                <div>
+                                    <strong>Healthy</strong>
+                                    <br/>
+                                    <small class="text-muted">Service is operational</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill text-warning me-2 fs-4"></i>
+                                <div>
+                                    <strong>Degraded</strong>
+                                    <br/>
+                                    <small class="text-muted">Service has issues but operational</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-x-circle-fill text-danger me-2 fs-4"></i>
+                                <div>
+                                    <strong>Unhealthy</strong>
+                                    <br/>
+                                    <small class="text-muted">Service is down or unavailable</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4 mb-5">
+        <div class="col-12 text-center">
+            <p class="text-muted">
+                <i class="bi bi-gear me-2"></i>
+                Powered by ASP.NET Core Health Checks UI |
+                <i class="bi bi-clock me-2"></i>
+                Auto-refresh every 10 seconds
+            </p>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Add smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+}

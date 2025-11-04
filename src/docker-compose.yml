@@ -48,10 +48,17 @@ services:
       context: .
       dockerfile: ApiGateways/YarpApiGateway/Dockerfile
 
+  healthdeck.web:
+    image: ${DOCKER_REGISTRY-}healthdeckweb
+    build:
+      context: .
+      dockerfile: WebApps/HealthDeck.Web/Dockerfile
+
 volumes:
   postgres_catalog:
   postgres_basket:
   elasticsearch_data:
+
 
 
 

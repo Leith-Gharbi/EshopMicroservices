@@ -1,5 +1,7 @@
 using BuildingBlocks.Logging;
 using BuildingBlocks.Resilience;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +33,9 @@ builder.Services.AddRefitClient<IOrderingService>()
     })
     .AddCriticalResilience(serviceName: "OrderingService"); // Critical operations use stricter policies
 
+// Add Health Checks
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -52,5 +57,11 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapRazorPages();
+
+// Map Health Check endpoint
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
 
 app.Run();

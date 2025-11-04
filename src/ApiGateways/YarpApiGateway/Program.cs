@@ -1,5 +1,7 @@
-using Microsoft.AspNetCore.RateLimiting;
 using BuildingBlocks.Logging;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +22,9 @@ builder.Services.AddRateLimiter(rateLimiterOptions =>
     });
 });
 
+// Add Health Checks
+builder.Services.AddHealthChecks();
+
 
 
 
@@ -33,5 +38,12 @@ app.UseElasticsearchHttpLogging();
 app.UseRateLimiter();
 
 app.MapReverseProxy();
+
+// Map Health Check endpoint
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
 
 app.Run();
