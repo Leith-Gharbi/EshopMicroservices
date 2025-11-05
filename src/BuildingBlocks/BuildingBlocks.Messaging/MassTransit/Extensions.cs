@@ -1,4 +1,5 @@
 ﻿
+using BuildingBlocks.Logging;
 using MassTransit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +25,12 @@ public static class Extentions
                     host.Username(configuration["MessageBroker:UserName"]!);
                     host.Password(configuration["MessageBroker:Password"]!);
                 });
+
+                // Add correlation ID filters for message bus
+                configurator.UsePublishFilter(typeof(CorrelationIdPublishFilter<>), context);
+                configurator.UseSendFilter(typeof(CorrelationIdSendFilter<>), context);
+                configurator.UseConsumeFilter(typeof(CorrelationIdConsumeFilter<>), context);
+
                 configurator.ConfigureEndpoints(context);
             });
         });

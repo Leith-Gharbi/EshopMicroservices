@@ -12,11 +12,17 @@ public class HttpLoggingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<HttpLoggingMiddleware> _logger;
+    private readonly ICorrelationIdAccessor _correlationIdAccessor;
+    private const string CorrelationIdHeaderName = "X-Correlation-Id";
 
-    public HttpLoggingMiddleware(RequestDelegate next, ILogger<HttpLoggingMiddleware> logger)
+    public HttpLoggingMiddleware(
+        RequestDelegate next,
+        ILogger<HttpLoggingMiddleware> logger,
+        ICorrelationIdAccessor correlationIdAccessor)
     {
         _next = next;
         _logger = logger;
+        _correlationIdAccessor = correlationIdAccessor;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -24,8 +30,23 @@ public class HttpLoggingMiddleware
         var stopwatch = Stopwatch.StartNew();
         var request = context.Request;
 
-        // Generate a unique correlation ID for this request
-        var correlationId = context.TraceIdentifier ?? Guid.NewGuid().ToString();
+        // Check for correlation ID in request header, generate if not present
+        var correlationId = request.Headers[CorrelationIdHeaderName].FirstOrDefault()
+                            ?? context.TraceIdentifier
+                            ?? Guid.NewGuid().ToString();
+
+        // Store correlation ID for access throughout the request pipeline
+        _correlationIdAccessor.SetCorrelationId(correlationId);
+
+        // Add correlation ID to response headers
+        context.Response.OnStarting(() =>
+        {
+            if (!context.Response.Headers.ContainsKey(CorrelationIdHeaderName))
+            {
+                context.Response.Headers.TryAdd(CorrelationIdHeaderName, correlationId);
+            }
+            return Task.CompletedTask;
+        });
 
         // Capture original response body stream
         var originalBodyStream = context.Response.Body;

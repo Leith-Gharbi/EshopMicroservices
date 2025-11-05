@@ -8,6 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add Serilog logging with Elasticsearch, File, and Console sinks
 builder.AddSerilogLogging();
+
+// Add Correlation ID services
+builder.Services.AddCorrelationId();
+
 var assembly = typeof(Program).Assembly; // Get the current assembly ( Basket.API )
 #region Add services to the container.
 
@@ -64,6 +68,7 @@ builder.Services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(
     };
     return handler;
 })
+.AddInterceptor<CorrelationIdGrpcInterceptor>() // Add correlation ID interceptor for gRPC
 .AddGrpcResilience(serviceName: "DiscountService") // Add Polly resilience policies for gRPC
 .ConfigureChannel(options =>
 {

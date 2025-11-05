@@ -8,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add Serilog logging with Elasticsearch, File, and Console sinks
 builder.AddSerilogLogging();
 
+// Add Correlation ID services
+builder.Services.AddCorrelationId();
 
 // Add services to the container.
 builder.Services.AddReverseProxy()

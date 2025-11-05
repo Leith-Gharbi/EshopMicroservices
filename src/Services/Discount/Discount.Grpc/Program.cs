@@ -11,8 +11,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add Serilog logging with Elasticsearch, File, and Console sinks
 builder.AddSerilogLogging();
 
+// Add Correlation ID services
+builder.Services.AddCorrelationId();
+
 // Add services to the container.
-builder.Services.AddGrpc();
+builder.Services.AddGrpc(options =>
+{
+    options.Interceptors.Add<CorrelationIdGrpcServerInterceptor>();
+});
 
 builder.Services.AddDbContext<DiscountContext>(opts =>
 opts.UseSqlite(builder.Configuration.GetConnectionString("Database")));
