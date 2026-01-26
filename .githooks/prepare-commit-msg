@@ -1,0 +1,5 @@
+#!/bin/sh
+# Wrapper to call PowerShell hook from Git Bash
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+powershell.exe -ExecutionPolicy Bypass -NoProfile -File "$SCRIPT_DIR/prepare-commit-msg.ps1" "$1" "$2"
