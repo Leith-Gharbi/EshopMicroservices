@@ -19,8 +19,9 @@ public static class CorrelationIdExtensions
         // Register the delegating handler for HttpClient
         services.AddTransient<CorrelationIdDelegatingHandler>();
 
-        // Register the gRPC client interceptor
-        services.AddSingleton<Interceptor, CorrelationIdGrpcInterceptor>();
+        // Register the gRPC client interceptor (both as concrete type and base type)
+        services.AddSingleton<CorrelationIdGrpcInterceptor>();
+        services.AddSingleton<Interceptor, CorrelationIdGrpcInterceptor>(sp => sp.GetRequiredService<CorrelationIdGrpcInterceptor>());
 
         // Register the gRPC server interceptor
         services.AddSingleton<CorrelationIdGrpcServerInterceptor>();

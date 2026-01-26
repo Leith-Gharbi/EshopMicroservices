@@ -35,6 +35,7 @@ builder.Services.AddRefitClient<IOrderingService>()
 
 // Add Health Checks
 builder.Services.AddHealthChecks();
+builder.Services.AddSingleton<ICorrelationIdAccessor, CorrelationIdAccessor>();
 
 var app = builder.Build();
 
