@@ -224,14 +224,7 @@ deploy:dev:
     - helm version
     - kubectl get nodes
   script:
-    - |
-      helm upgrade --install eshop-dev $HELM_CHART_PATH \
-        --namespace eshop-dev \
-        --create-namespace \
-        --values $HELM_CHART_PATH/values-dev.yaml \
-        --set global.imageTag=$CI_COMMIT_SHORT_SHA \
-        --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE \
-        --wait --timeout 15m
+    - helm upgrade --install eshop-dev $HELM_CHART_PATH --namespace eshop-dev --create-namespace --values $HELM_CHART_PATH/values-dev.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --wait --timeout 15m
     - echo "Deployment to eshop-dev complete!"
     - kubectl get pods -n eshop-dev
     - kubectl get svc -n eshop-dev
@@ -267,14 +260,7 @@ deploy:staging:
     - kubectl version --client
     - helm version
   script:
-    - |
-      helm upgrade --install eshop-staging $HELM_CHART_PATH \
-        --namespace eshop-staging \
-        --create-namespace \
-        --values $HELM_CHART_PATH/values-staging.yaml \
-        --set global.imageTag=$CI_COMMIT_SHORT_SHA \
-        --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE \
-        --wait --timeout 15m
+    - helm upgrade --install eshop-staging $HELM_CHART_PATH --namespace eshop-staging --create-namespace --values $HELM_CHART_PATH/values-staging.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --wait --timeout 15m
     - echo "Deployment to eshop-staging complete!"
     - kubectl get pods -n eshop-staging
     - kubectl get svc -n eshop-staging
@@ -294,21 +280,14 @@ deploy:prod:
     - kubectl version --client
     - helm version
   script:
-    - |
-      helm upgrade --install eshop-prod $HELM_CHART_PATH \
-        --namespace eshop-prod \
-        --create-namespace \
-        --values $HELM_CHART_PATH/values-prod.yaml \
-        --set global.imageTag=$CI_COMMIT_TAG \
-        --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE \
-        --wait --timeout 15m
+    - helm upgrade --install eshop-prod $HELM_CHART_PATH --namespace eshop-prod --create-namespace --values $HELM_CHART_PATH/values-prod.yaml --set global.imageTag=$CI_COMMIT_TAG --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --wait --timeout 15m
     - echo "Deployment to eshop-prod complete!"
     - kubectl get pods -n eshop-prod
     - kubectl get svc -n eshop-prod
-    - echo "Production deployment successful! Version: $CI_COMMIT_TAG"
+    - echo "Production deployment successful! Version - $CI_COMMIT_TAG"
   environment:
     name: production
     url: http://eshop.yourcompany.com
-  when: manual  # Require manual approval for production
+  when: manual
   only:
-    - tags  # Only deploy tags to production
+    - tags
