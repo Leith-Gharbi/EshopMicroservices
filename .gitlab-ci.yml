@@ -1,0 +1,314 @@
+# GitLab CI/CD Pipeline for EshopMicroservices
+# Deploys to IBM Cloud IKS: lgharbi-eshop-cluster-k8s
+# Registry: de.icr.io/eshop-images
+
+stages:
+  - build
+  - test
+  - push
+  - deploy-dev
+  - deploy-staging
+  - deploy-prod
+
+variables:
+  IBM_CLOUD_REGION: us-south  # Update to your region
+  IBM_CLOUD_RESOURCE_GROUP: default
+  IKS_CLUSTER_NAME: lgharbi-eshop-cluster-k8s
+  ICR_REGISTRY: de.icr.io
+  ICR_NAMESPACE: eshop-images
+  HELM_CHART_PATH: deploy/helm/eshop-microservices
+  DOCKER_DRIVER: overlay2
+
+# Build all Docker images
+.build_template: &build_template
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  only:
+    - develop
+    - main
+    - tags
+
+build:catalog-api:
+  <<: *build_template
+  script:
+    - cd src/Services/Catalog/Catalog.API
+    - docker build -t catalog-api:$CI_COMMIT_SHORT_SHA -f Dockerfile ../../../..
+    - docker save catalog-api:$CI_COMMIT_SHORT_SHA -o catalog-api.tar
+  artifacts:
+    paths:
+      - src/Services/Catalog/Catalog.API/catalog-api.tar
+    expire_in: 2 hours
+
+build:basket-api:
+  <<: *build_template
+  script:
+    - cd src/Services/Basket/Basket.API
+    - docker build -t basket-api:$CI_COMMIT_SHORT_SHA -f Dockerfile ../../../..
+    - docker save basket-api:$CI_COMMIT_SHORT_SHA -o basket-api.tar
+  artifacts:
+    paths:
+      - src/Services/Basket/Basket.API/basket-api.tar
+    expire_in: 2 hours
+
+build:ordering-api:
+  <<: *build_template
+  script:
+    - cd src/Services/Ordering/Ordering.API
+    - docker build -t ordering-api:$CI_COMMIT_SHORT_SHA -f Dockerfile ../../../..
+    - docker save ordering-api:$CI_COMMIT_SHORT_SHA -o ordering-api.tar
+  artifacts:
+    paths:
+      - src/Services/Ordering/Ordering.API/ordering-api.tar
+    expire_in: 2 hours
+
+build:discount-grpc:
+  <<: *build_template
+  script:
+    - cd src/Services/Discount/Discount.Grpc
+    - docker build -t discount-grpc:$CI_COMMIT_SHORT_SHA -f Dockerfile ../../../..
+    - docker save discount-grpc:$CI_COMMIT_SHORT_SHA -o discount-grpc.tar
+  artifacts:
+    paths:
+      - src/Services/Discount/Discount.Grpc/discount-grpc.tar
+    expire_in: 2 hours
+
+build:yarp-gateway:
+  <<: *build_template
+  script:
+    - cd src/ApiGateways/YarpApiGateway
+    - docker build -t yarp-gateway:$CI_COMMIT_SHORT_SHA -f Dockerfile ../..
+    - docker save yarp-gateway:$CI_COMMIT_SHORT_SHA -o yarp-gateway.tar
+  artifacts:
+    paths:
+      - src/ApiGateways/YarpApiGateway/yarp-gateway.tar
+    expire_in: 2 hours
+
+build:shopping-web:
+  <<: *build_template
+  script:
+    - cd src/WebApps/Shopping.Web
+    - docker build -t shopping-web:$CI_COMMIT_SHORT_SHA -f Dockerfile ../..
+    - docker save shopping-web:$CI_COMMIT_SHORT_SHA -o shopping-web.tar
+  artifacts:
+    paths:
+      - src/WebApps/Shopping.Web/shopping-web.tar
+    expire_in: 2 hours
+
+build:healthdeck-web:
+  <<: *build_template
+  script:
+    - cd src/WebApps/HealthDeck.Web
+    - docker build -t healthdeck-web:$CI_COMMIT_SHORT_SHA -f Dockerfile ../..
+    - docker save healthdeck-web:$CI_COMMIT_SHORT_SHA -o healthdeck-web.tar
+  artifacts:
+    paths:
+      - src/WebApps/HealthDeck.Web/healthdeck-web.tar
+    expire_in: 2 hours
+
+# Run tests
+test:unit:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - dotnet restore src/eshop-micoservices.sln
+    - dotnet build src/eshop-micoservices.sln --configuration Release --no-restore
+    - dotnet test src/eshop-micoservices.sln --configuration Release --no-build --verbosity normal
+  only:
+    - develop
+    - main
+    - tags
+
+# Push images to IBM Container Registry
+.push_template: &push_template
+  stage: push
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
+  before_script:
+    - ibmcloud --version
+    - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION -g $IBM_CLOUD_RESOURCE_GROUP
+    - ibmcloud cr login
+    - ibmcloud cr namespace-list | grep -q $ICR_NAMESPACE || ibmcloud cr namespace-add $ICR_NAMESPACE
+  only:
+    - develop
+    - main
+    - tags
+
+push:catalog-api:
+  <<: *push_template
+  script:
+    - docker load -i src/Services/Catalog/Catalog.API/catalog-api.tar
+    - docker tag catalog-api:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/catalog-api:$CI_COMMIT_SHORT_SHA
+    - docker tag catalog-api:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/catalog-api:latest
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/catalog-api:$CI_COMMIT_SHORT_SHA
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/catalog-api:latest
+  dependencies:
+    - build:catalog-api
+
+push:basket-api:
+  <<: *push_template
+  script:
+    - docker load -i src/Services/Basket/Basket.API/basket-api.tar
+    - docker tag basket-api:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/basket-api:$CI_COMMIT_SHORT_SHA
+    - docker tag basket-api:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/basket-api:latest
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/basket-api:$CI_COMMIT_SHORT_SHA
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/basket-api:latest
+  dependencies:
+    - build:basket-api
+
+push:ordering-api:
+  <<: *push_template
+  script:
+    - docker load -i src/Services/Ordering/Ordering.API/ordering-api.tar
+    - docker tag ordering-api:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/ordering-api:$CI_COMMIT_SHORT_SHA
+    - docker tag ordering-api:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/ordering-api:latest
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/ordering-api:$CI_COMMIT_SHORT_SHA
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/ordering-api:latest
+  dependencies:
+    - build:ordering-api
+
+push:discount-grpc:
+  <<: *push_template
+  script:
+    - docker load -i src/Services/Discount/Discount.Grpc/discount-grpc.tar
+    - docker tag discount-grpc:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/discount-grpc:$CI_COMMIT_SHORT_SHA
+    - docker tag discount-grpc:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/discount-grpc:latest
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/discount-grpc:$CI_COMMIT_SHORT_SHA
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/discount-grpc:latest
+  dependencies:
+    - build:discount-grpc
+
+push:yarp-gateway:
+  <<: *push_template
+  script:
+    - docker load -i src/ApiGateways/YarpApiGateway/yarp-gateway.tar
+    - docker tag yarp-gateway:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/yarp-gateway:$CI_COMMIT_SHORT_SHA
+    - docker tag yarp-gateway:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/yarp-gateway:latest
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/yarp-gateway:$CI_COMMIT_SHORT_SHA
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/yarp-gateway:latest
+  dependencies:
+    - build:yarp-gateway
+
+push:shopping-web:
+  <<: *push_template
+  script:
+    - docker load -i src/WebApps/Shopping.Web/shopping-web.tar
+    - docker tag shopping-web:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/shopping-web:$CI_COMMIT_SHORT_SHA
+    - docker tag shopping-web:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/shopping-web:latest
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/shopping-web:$CI_COMMIT_SHORT_SHA
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/shopping-web:latest
+  dependencies:
+    - build:shopping-web
+
+push:healthdeck-web:
+  <<: *push_template
+  script:
+    - docker load -i src/WebApps/HealthDeck.Web/healthdeck-web.tar
+    - docker tag healthdeck-web:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/healthdeck-web:$CI_COMMIT_SHORT_SHA
+    - docker tag healthdeck-web:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/healthdeck-web:latest
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/healthdeck-web:$CI_COMMIT_SHORT_SHA
+    - docker push $ICR_REGISTRY/$ICR_NAMESPACE/healthdeck-web:latest
+  dependencies:
+    - build:healthdeck-web
+
+# Deploy to Development environment (eshop-dev namespace)
+deploy:dev:
+  stage: deploy-dev
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
+  before_script:
+    - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION -g $IBM_CLOUD_RESOURCE_GROUP
+    - ibmcloud ks cluster config --cluster $IKS_CLUSTER_NAME
+    - kubectl version --client
+    - helm version
+    - kubectl get nodes
+  script:
+    - |
+      helm upgrade --install eshop-dev $HELM_CHART_PATH \
+        --namespace eshop-dev \
+        --create-namespace \
+        --values $HELM_CHART_PATH/values-dev.yaml \
+        --set global.imageTag=$CI_COMMIT_SHORT_SHA \
+        --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE \
+        --wait --timeout 15m
+    - echo "Deployment to eshop-dev complete!"
+    - kubectl get pods -n eshop-dev
+    - kubectl get svc -n eshop-dev
+  environment:
+    name: development
+    url: http://dev-eshop.yourcompany.com
+    on_stop: stop:dev
+  only:
+    - develop
+
+# Stop development environment
+stop:dev:
+  stage: deploy-dev
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
+  script:
+    - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION -g $IBM_CLOUD_RESOURCE_GROUP
+    - ibmcloud ks cluster config --cluster $IKS_CLUSTER_NAME
+    - helm uninstall eshop-dev --namespace eshop-dev || true
+  environment:
+    name: development
+    action: stop
+  when: manual
+  only:
+    - develop
+
+# Deploy to Staging environment (eshop-staging namespace)
+deploy:staging:
+  stage: deploy-staging
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
+  before_script:
+    - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION -g $IBM_CLOUD_RESOURCE_GROUP
+    - ibmcloud ks cluster config --cluster $IKS_CLUSTER_NAME
+    - kubectl version --client
+    - helm version
+  script:
+    - |
+      helm upgrade --install eshop-staging $HELM_CHART_PATH \
+        --namespace eshop-staging \
+        --create-namespace \
+        --values $HELM_CHART_PATH/values-staging.yaml \
+        --set global.imageTag=$CI_COMMIT_SHORT_SHA \
+        --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE \
+        --wait --timeout 15m
+    - echo "Deployment to eshop-staging complete!"
+    - kubectl get pods -n eshop-staging
+    - kubectl get svc -n eshop-staging
+  environment:
+    name: staging
+    url: http://staging-eshop.yourcompany.com
+  only:
+    - main
+
+# Deploy to Production environment (eshop-prod namespace)
+deploy:prod:
+  stage: deploy-prod
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
+  before_script:
+    - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION -g $IBM_CLOUD_RESOURCE_GROUP
+    - ibmcloud ks cluster config --cluster $IKS_CLUSTER_NAME
+    - kubectl version --client
+    - helm version
+  script:
+    - |
+      helm upgrade --install eshop-prod $HELM_CHART_PATH \
+        --namespace eshop-prod \
+        --create-namespace \
+        --values $HELM_CHART_PATH/values-prod.yaml \
+        --set global.imageTag=$CI_COMMIT_TAG \
+        --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE \
+        --wait --timeout 15m
+    - echo "Deployment to eshop-prod complete!"
+    - kubectl get pods -n eshop-prod
+    - kubectl get svc -n eshop-prod
+    - echo "Production deployment successful! Version: $CI_COMMIT_TAG"
+  environment:
+    name: production
+    url: http://eshop.yourcompany.com
+  when: manual  # Require manual approval for production
+  only:
+    - tags  # Only deploy tags to production

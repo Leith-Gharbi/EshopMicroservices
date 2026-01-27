@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eshop.fullname" . }}-discount-grpc
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: discount-grpc
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: grpc
+    protocol: TCP
+    name: grpc
+  selector:
+    {{- include "eshop.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: discount-grpc

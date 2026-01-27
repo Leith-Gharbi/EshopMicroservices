@@ -1,0 +1,32 @@
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "eshop.fullname" . }}-yarp-gateway
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: yarp-gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "eshop.fullname" . }}-yarp-gateway
+  minReplicas: {{ .Values.autoscaling.yarpGateway.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.yarpGateway.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.autoscaling.yarpGateway.targetCPUUtilizationPercentage }}
+  {{- if .Values.autoscaling.yarpGateway.targetMemoryUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.autoscaling.yarpGateway.targetMemoryUtilizationPercentage }}
+  {{- end }}
+{{- end }}

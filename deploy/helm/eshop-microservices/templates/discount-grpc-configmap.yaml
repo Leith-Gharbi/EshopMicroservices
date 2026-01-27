@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eshop.fullname" . }}-discount-grpc-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: discount-grpc
+data:
+  ASPNETCORE_ENVIRONMENT: {{ .Values.global.environment | quote }}
+  ASPNETCORE_HTTP_PORTS: {{ .Values.ports.discountGrpc | quote }}
+  ASPNETCORE_URLS: "http://+:{{ .Values.ports.discountGrpc }}"
+  ElasticConfiguration__Uri: {{ include "eshop.elasticsearchUrl" . | quote }}
+  ConnectionStrings__Database: "Data Source=discountdb"

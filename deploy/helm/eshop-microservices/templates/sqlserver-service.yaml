@@ -1,0 +1,21 @@
+{{- if .Values.sqlserver.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eshop.fullname" . }}-sqlserver
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sqlserver
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service for StatefulSet
+  ports:
+  - name: sqlserver
+    port: 1433
+    targetPort: sqlserver
+    protocol: TCP
+  selector:
+    {{- include "eshop.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: sqlserver
+{{- end }}

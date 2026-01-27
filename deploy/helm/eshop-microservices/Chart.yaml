@@ -1,0 +1,17 @@
+apiVersion: v2
+name: eshop-microservices
+description: A Helm chart for deploying EshopMicroservices .NET 8 application to IBM Cloud IKS
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - eshop
+  - microservices
+  - dotnet
+  - ecommerce
+  - ibm-cloud
+maintainers:
+  - name: EshopMicroservices Team
+    email: leithgharbi@yahoo.fr
+sources:
+  - https://gitlab.com/Leith-Gharbi/eshopmicroservices

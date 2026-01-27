@@ -1,0 +1,21 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eshop.fullname" . }}-postgresql-catalogdb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql-catalogdb
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service for StatefulSet
+  ports:
+  - name: postgresql
+    port: 5432
+    targetPort: postgresql
+    protocol: TCP
+  selector:
+    {{- include "eshop.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql-catalogdb
+{{- end }}

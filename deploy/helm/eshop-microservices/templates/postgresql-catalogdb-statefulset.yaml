@@ -1,0 +1,73 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "eshop.fullname" . }}-postgresql-catalogdb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql-catalogdb
+spec:
+  serviceName: {{ include "eshop.fullname" . }}-postgresql-catalogdb
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "eshop.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgresql-catalogdb
+  template:
+    metadata:
+      labels:
+        {{- include "eshop.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: postgresql-catalogdb
+    spec:
+      containers:
+      - name: postgresql
+        image: {{ .Values.postgresql.image }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: postgresql
+          containerPort: 5432
+          protocol: TCP
+        env:
+        - name: POSTGRES_DB
+          value: {{ .Values.postgresql.catalogDb.name }}
+        - name: POSTGRES_USER
+          value: {{ .Values.postgresql.catalogDb.user }}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "eshop.fullname" . }}-secrets
+              key: postgresql-catalog-password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          {{- toYaml .Values.postgresql.catalogDb.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U {{ .Values.postgresql.catalogDb.user }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U {{ .Values.postgresql.catalogDb.user }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: {{ .Values.postgresql.catalogDb.storageClass }}
+      resources:
+        requests:
+          storage: {{ .Values.postgresql.catalogDb.storageSize }}
+{{- end }}

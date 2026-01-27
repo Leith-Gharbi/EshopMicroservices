@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eshop.fullname" . }}-ordering-api-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ordering-api
+data:
+  ASPNETCORE_ENVIRONMENT: {{ .Values.global.environment | quote }}
+  ASPNETCORE_HTTP_PORTS: {{ .Values.ports.orderingApi | quote }}
+  ElasticConfiguration__Uri: {{ include "eshop.elasticsearchUrl" . | quote }}
+  FeatureManagement__OrderFullfilment: "false"

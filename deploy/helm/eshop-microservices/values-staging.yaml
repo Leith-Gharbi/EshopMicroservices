@@ -1,0 +1,146 @@
+# Staging environment overrides for eshop-staging namespace
+
+global:
+  namespace: eshop-staging
+  environment: staging
+  imageTag: latest
+  imageRegistry: de.icr.io/eshop-images
+  imagePullPolicy: IfNotPresent
+
+# Medium replica counts for staging
+replicaCount:
+  catalogApi: 2
+  basketApi: 2
+  orderingApi: 2
+  discountGrpc: 1
+  yarpGateway: 2
+  shoppingWeb: 1
+  healthdeckWeb: 1
+
+# Medium resources for staging
+resources:
+  catalogApi:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  basketApi:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  orderingApi:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  discountGrpc:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  yarpGateway:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  shoppingWeb:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  healthdeckWeb:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# Medium storage for staging
+postgresql:
+  catalogDb:
+    storageSize: 10Gi
+    storageClass: ibmc-block-silver
+  basketDb:
+    storageSize: 10Gi
+    storageClass: ibmc-block-silver
+
+sqlserver:
+  storageSize: 20Gi
+  storageClass: ibmc-block-silver
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+
+redis:
+  storageSize: 2Gi
+  storageClass: ibmc-block-silver
+
+rabbitmq:
+  storageSize: 5Gi
+  storageClass: ibmc-block-silver
+
+elasticsearch:
+  storageSize: 20Gi
+  storageClass: ibmc-block-silver
+  javaOpts: "-Xms512m -Xmx512m"
+
+# Staging ingress
+ingress:
+  enabled: true
+  hosts:
+    - host: staging-eshop.yourcompany.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: yarp-gateway
+          port: 80
+  tls:
+    enabled: true
+    secretName: eshop-staging-tls
+
+# Enable autoscaling in staging
+autoscaling:
+  enabled: true
+  catalogApi:
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+  basketApi:
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+  orderingApi:
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+  yarpGateway:
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+
+# Enable network policies in staging
+networkPolicies:
+  enabled: true
+
+# Enable PDB in staging
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1

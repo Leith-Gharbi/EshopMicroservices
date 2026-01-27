@@ -1,0 +1,73 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "eshop.fullname" . }}-postgresql-basketdb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql-basketdb
+spec:
+  serviceName: {{ include "eshop.fullname" . }}-postgresql-basketdb
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "eshop.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgresql-basketdb
+  template:
+    metadata:
+      labels:
+        {{- include "eshop.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: postgresql-basketdb
+    spec:
+      containers:
+      - name: postgresql
+        image: {{ .Values.postgresql.image }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: postgresql
+          containerPort: 5432
+          protocol: TCP
+        env:
+        - name: POSTGRES_DB
+          value: {{ .Values.postgresql.basketDb.name }}
+        - name: POSTGRES_USER
+          value: {{ .Values.postgresql.basketDb.user }}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "eshop.fullname" . }}-secrets
+              key: postgresql-basket-password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          {{- toYaml .Values.postgresql.basketDb.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U {{ .Values.postgresql.basketDb.user }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U {{ .Values.postgresql.basketDb.user }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: {{ .Values.postgresql.basketDb.storageClass }}
+      resources:
+        requests:
+          storage: {{ .Values.postgresql.basketDb.storageSize }}
+{{- end }}

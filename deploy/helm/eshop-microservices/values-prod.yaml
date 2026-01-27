@@ -1,0 +1,203 @@
+# Production environment overrides for eshop-prod namespace
+
+global:
+  namespace: eshop-prod
+  environment: production
+  imageTag: stable  # Should be overridden with specific version tag in CI/CD
+  imageRegistry: de.icr.io/eshop-images
+  imagePullPolicy: IfNotPresent
+
+# Production replica counts
+replicaCount:
+  catalogApi: 3
+  basketApi: 3
+  orderingApi: 3
+  discountGrpc: 2
+  yarpGateway: 3
+  shoppingWeb: 2
+  healthdeckWeb: 1
+
+# Production-grade resources
+resources:
+  catalogApi:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  basketApi:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  orderingApi:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  discountGrpc:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  yarpGateway:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  shoppingWeb:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  healthdeckWeb:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Production storage with Gold tier
+postgresql:
+  catalogDb:
+    storageSize: 20Gi
+    storageClass: ibmc-block-gold  # 10 IOPS/GB
+  basketDb:
+    storageSize: 20Gi
+    storageClass: ibmc-block-gold
+
+sqlserver:
+  storageSize: 50Gi
+  storageClass: ibmc-block-gold
+  edition: Standard  # Use Standard or Enterprise in production
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 4Gi
+    limits:
+      cpu: 2000m
+      memory: 8Gi
+
+redis:
+  storageSize: 5Gi
+  storageClass: ibmc-block-gold
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+rabbitmq:
+  storageSize: 10Gi
+  storageClass: ibmc-block-gold
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+elasticsearch:
+  storageSize: 50Gi
+  storageClass: ibmc-block-gold
+  javaOpts: "-Xms1g -Xmx1g"
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+
+kibana:
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# Production ingress with TLS
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: "public-iks-k8s-nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    ingress.bluemix.net/redirect-to-https: "True"
+    ingress.bluemix.net/rate-limit: "serviceName=yarp-gateway key=${http_host} rate=100r/m conn=50"
+  hosts:
+    - host: eshop.yourcompany.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: yarp-gateway
+          port: 80
+  tls:
+    enabled: true
+    secretName: eshop-prod-tls
+
+# Production autoscaling with higher limits
+autoscaling:
+  enabled: true
+  catalogApi:
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  basketApi:
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  orderingApi:
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  yarpGateway:
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Enable network policies for security
+networkPolicies:
+  enabled: true
+
+# Enable pod disruption budgets for high availability
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2  # Keep at least 2 pods available during updates
+
+# Anti-affinity to spread pods across nodes (when multi-node)
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                  - catalog-api
+                  - basket-api
+                  - ordering-api
+                  - yarp-gateway
+          topologyKey: kubernetes.io/hostname

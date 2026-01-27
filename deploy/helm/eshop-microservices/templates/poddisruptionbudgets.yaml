@@ -1,0 +1,62 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+---
+# Catalog API PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "eshop.fullname" . }}-catalog-api-pdb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "eshop.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: catalog-api
+---
+# Basket API PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "eshop.fullname" . }}-basket-api-pdb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "eshop.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: basket-api
+---
+# Ordering API PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "eshop.fullname" . }}-ordering-api-pdb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "eshop.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ordering-api
+---
+# YARP Gateway PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "eshop.fullname" . }}-yarp-gateway-pdb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "eshop.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: yarp-gateway
+{{- end }}

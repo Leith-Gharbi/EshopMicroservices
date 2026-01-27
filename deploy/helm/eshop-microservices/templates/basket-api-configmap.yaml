@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eshop.fullname" . }}-basket-api-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: basket-api
+data:
+  ASPNETCORE_ENVIRONMENT: {{ .Values.global.environment | quote }}
+  ASPNETCORE_HTTP_PORTS: {{ .Values.ports.basketApi | quote }}
+  ElasticConfiguration__Uri: {{ include "eshop.elasticsearchUrl" . | quote }}
+  GrpcSettings__DiscountUrl: {{ include "eshop.discountGrpcUrl" . | quote }}

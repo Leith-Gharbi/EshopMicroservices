@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eshop.fullname" . }}-discount-grpc
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: discount-grpc
+spec:
+  replicas: {{ .Values.replicaCount.discountGrpc }}
+  selector:
+    matchLabels:
+      {{- include "eshop.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: discount-grpc
+  template:
+    metadata:
+      labels:
+        {{- include "eshop.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: discount-grpc
+    spec:
+      serviceAccountName: {{ include "eshop.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      containers:
+      - name: discount-grpc
+        image: {{ include "eshop.image" (list "discountGrpc" .) }}
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        ports:
+        - name: grpc
+          containerPort: {{ .Values.ports.discountGrpc }}
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: {{ include "eshop.fullname" . }}-discount-grpc-config
+        resources:
+          {{- toYaml .Values.resources.discountGrpc | nindent 10 }}
+        livenessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:{{ .Values.ports.discountGrpc }}"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:{{ .Values.ports.discountGrpc }}"]
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

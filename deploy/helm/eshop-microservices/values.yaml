@@ -1,0 +1,295 @@
+# Default values for eshop-microservices
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  namespace: eshop-dev
+  environment: development
+  imageRegistry: de.icr.io/eshop-images
+  imageTag: latest
+  imagePullPolicy: IfNotPresent
+
+# Service images
+images:
+  catalogApi:
+    repository: catalog-api
+    tag: ""  # Uses global.imageTag if empty
+  basketApi:
+    repository: basket-api
+    tag: ""
+  orderingApi:
+    repository: ordering-api
+    tag: ""
+  discountGrpc:
+    repository: discount-grpc
+    tag: ""
+  yarpGateway:
+    repository: yarp-gateway
+    tag: ""
+  shoppingWeb:
+    repository: shopping-web
+    tag: ""
+  healthdeckWeb:
+    repository: healthdeck-web
+    tag: ""
+
+# Replica counts for each service
+replicaCount:
+  catalogApi: 2
+  basketApi: 2
+  orderingApi: 2
+  discountGrpc: 1
+  yarpGateway: 2
+  shoppingWeb: 1
+  healthdeckWeb: 1
+
+# Service ports (container ports)
+ports:
+  catalogApi: 8080
+  basketApi: 8080
+  orderingApi: 8080
+  discountGrpc: 8080
+  yarpGateway: 8080
+  shoppingWeb: 8080
+  healthdeckWeb: 8080
+
+# Resource requests and limits
+resources:
+  catalogApi:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  basketApi:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  orderingApi:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  discountGrpc:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  yarpGateway:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  shoppingWeb:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  healthdeckWeb:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  image: postgres:16-alpine
+  catalogDb:
+    name: CatalogDb
+    user: postgres
+    password: postgres  # Override in production
+    port: 5432
+    storageSize: 10Gi
+    storageClass: ibmc-block-bronze
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  basketDb:
+    name: BasketDb
+    user: postgres
+    password: postgres  # Override in production
+    port: 5432
+    storageSize: 10Gi
+    storageClass: ibmc-block-bronze
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+# SQL Server configuration
+sqlserver:
+  enabled: true
+  image: mcr.microsoft.com/mssql/server:2022-latest
+  acceptEula: "Y"
+  edition: Developer
+  database: OrderDb
+  saPassword: "SwN12345678"  # Override in production
+  port: 1433
+  storageSize: 20Gi
+  storageClass: ibmc-block-bronze
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+
+# Redis configuration
+redis:
+  enabled: true
+  image: redis:7-alpine
+  port: 6379
+  storageSize: 2Gi
+  storageClass: ibmc-block-bronze
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# RabbitMQ configuration
+rabbitmq:
+  enabled: true
+  image: rabbitmq:3-management-alpine
+  username: guest
+  password: guest  # Override in production
+  port: 5672
+  managementPort: 15672
+  storageSize: 5Gi
+  storageClass: ibmc-block-bronze
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Elasticsearch configuration
+elasticsearch:
+  enabled: true
+  image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+  port: 9200
+  transportPort: 9300
+  storageSize: 20Gi
+  storageClass: ibmc-block-bronze
+  javaOpts: "-Xms512m -Xmx512m"
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+# Kibana configuration
+kibana:
+  enabled: true
+  image: docker.elastic.co/kibana/kibana:8.11.0
+  port: 5601
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Ingress configuration for IBM Cloud IKS
+ingress:
+  enabled: true
+  className: public-iks-k8s-nginx
+  annotations:
+    kubernetes.io/ingress.class: "public-iks-k8s-nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    ingress.bluemix.net/redirect-to-https: "True"
+  hosts:
+    - host: eshop.yourcompany.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: yarp-gateway
+          port: 80
+  tls:
+    enabled: false
+    secretName: eshop-tls
+    hosts:
+      - eshop.yourcompany.com
+
+# Horizontal Pod Autoscaler configuration
+autoscaling:
+  enabled: false
+  catalogApi:
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  basketApi:
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  orderingApi:
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  yarpGateway:
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Network policies
+networkPolicies:
+  enabled: false
+
+# Pod disruption budgets
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# Service account
+serviceAccount:
+  create: true
+  name: eshop-sa
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

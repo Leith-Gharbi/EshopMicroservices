@@ -1,0 +1,24 @@
+{{- if .Values.elasticsearch.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eshop.fullname" . }}-elasticsearch
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "eshop.labels" . | nindent 4 }}
+    app.kubernetes.io/component: elasticsearch
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 9200
+    targetPort: http
+    protocol: TCP
+  - name: transport
+    port: 9300
+    targetPort: transport
+    protocol: TCP
+  selector:
+    {{- include "eshop.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: elasticsearch
+{{- end }}

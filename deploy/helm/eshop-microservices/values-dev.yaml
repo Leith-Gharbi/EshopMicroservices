@@ -1,0 +1,132 @@
+# Development environment overrides for eshop-dev namespace
+
+global:
+  namespace: eshop-dev
+  environment: development
+  imageTag: latest
+  imageRegistry: de.icr.io/eshop-images
+  imagePullPolicy: Always  # Always pull latest in dev
+
+# Lower replica counts for development
+replicaCount:
+  catalogApi: 1
+  basketApi: 1
+  orderingApi: 1
+  discountGrpc: 1
+  yarpGateway: 1
+  shoppingWeb: 1
+  healthdeckWeb: 1
+
+# Reduced resources for development
+resources:
+  catalogApi:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  basketApi:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  orderingApi:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  discountGrpc:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  yarpGateway:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  shoppingWeb:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  healthdeckWeb:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# Smaller storage for development
+postgresql:
+  catalogDb:
+    storageSize: 5Gi
+    storageClass: ibmc-block-bronze
+  basketDb:
+    storageSize: 5Gi
+    storageClass: ibmc-block-bronze
+
+sqlserver:
+  storageSize: 10Gi
+  storageClass: ibmc-block-bronze
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+redis:
+  storageSize: 1Gi
+
+rabbitmq:
+  storageSize: 2Gi
+
+elasticsearch:
+  storageSize: 10Gi
+  javaOpts: "-Xms256m -Xmx256m"
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# Development ingress
+ingress:
+  enabled: true
+  hosts:
+    - host: dev-eshop.yourcompany.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: yarp-gateway
+          port: 80
+  tls:
+    enabled: false
+
+# Autoscaling disabled in dev
+autoscaling:
+  enabled: false
+
+# Network policies disabled in dev for easier debugging
+networkPolicies:
+  enabled: false
+
+# PDB disabled in dev
+podDisruptionBudget:
+  enabled: false

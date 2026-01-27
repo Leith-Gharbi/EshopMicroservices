@@ -1,0 +1,78 @@
+################################################################################
+#                      EshopMicroservices Deployment                           #
+################################################################################
+
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named: {{ .Release.Name }}
+Namespace: {{ .Values.global.namespace }}
+Environment: {{ .Values.global.environment }}
+
+To get the status of your deployment:
+
+  kubectl get pods -n {{ .Values.global.namespace }}
+
+To check services:
+
+  kubectl get svc -n {{ .Values.global.namespace }}
+
+{{- if .Values.ingress.enabled }}
+
+Application URLs:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+
+{{- else }}
+
+The application is not exposed via Ingress. To access services:
+
+  kubectl port-forward svc/{{ include "eshop.fullname" . }}-yarp-gateway 8080:80 -n {{ .Values.global.namespace }}
+
+Then visit: http://localhost:8080
+
+{{- end }}
+
+Microservices deployed:
+  - Catalog API ({{ .Values.replicaCount.catalogApi }} replicas)
+  - Basket API ({{ .Values.replicaCount.basketApi }} replicas)
+  - Ordering API ({{ .Values.replicaCount.orderingApi }} replicas)
+  - Discount gRPC ({{ .Values.replicaCount.discountGrpc }} replicas)
+  - YARP Gateway ({{ .Values.replicaCount.yarpGateway }} replicas)
+  - Shopping Web ({{ .Values.replicaCount.shoppingWeb }} replicas)
+  - HealthDeck Web ({{ .Values.replicaCount.healthdeckWeb }} replicas)
+
+Infrastructure services:
+{{- if .Values.postgresql.enabled }}
+  - PostgreSQL (CatalogDb, BasketDb)
+{{- end }}
+{{- if .Values.sqlserver.enabled }}
+  - SQL Server (OrderDb)
+{{- end }}
+{{- if .Values.redis.enabled }}
+  - Redis
+{{- end }}
+{{- if .Values.rabbitmq.enabled }}
+  - RabbitMQ
+{{- end }}
+{{- if .Values.elasticsearch.enabled }}
+  - Elasticsearch
+{{- end }}
+{{- if .Values.kibana.enabled }}
+  - Kibana
+{{- end }}
+
+Monitoring:
+
+  # View logs via Kibana
+  kubectl port-forward svc/{{ include "eshop.fullname" . }}-kibana 5601:5601 -n {{ .Values.global.namespace }}
+  # Open: http://localhost:5601
+
+  # Access RabbitMQ Management
+  kubectl port-forward svc/{{ include "eshop.fullname" . }}-rabbitmq 15672:15672 -n {{ .Values.global.namespace }}
+  # Open: http://localhost:15672 (guest/guest)
+
+  # View application health
+  kubectl get pods -n {{ .Values.global.namespace }} --watch
+
+For more information, visit: https://github.com/your-org/eshop-microservices
