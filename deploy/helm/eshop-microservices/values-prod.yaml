@@ -73,14 +73,14 @@ resources:
 postgresql:
   catalogDb:
     storageSize: 20Gi
-    storageClass: ibmc-block-gold  # 10 IOPS/GB
+    storageClass: ibmc-vpc-block-10iops-tier  # 10 IOPS/GB
   basketDb:
     storageSize: 20Gi
-    storageClass: ibmc-block-gold
+    storageClass: ibmc-vpc-block-10iops-tier
 
 sqlserver:
   storageSize: 50Gi
-  storageClass: ibmc-block-gold
+  storageClass: ibmc-vpc-block-10iops-tier
   edition: Standard  # Use Standard or Enterprise in production
   resources:
     requests:
@@ -92,7 +92,7 @@ sqlserver:
 
 redis:
   storageSize: 5Gi
-  storageClass: ibmc-block-gold
+  storageClass: ibmc-vpc-block-10iops-tier
   resources:
     requests:
       cpu: 100m
@@ -103,7 +103,7 @@ redis:
 
 rabbitmq:
   storageSize: 10Gi
-  storageClass: ibmc-block-gold
+  storageClass: ibmc-vpc-block-10iops-tier
   resources:
     requests:
       cpu: 200m
@@ -114,7 +114,7 @@ rabbitmq:
 
 elasticsearch:
   storageSize: 50Gi
-  storageClass: ibmc-block-gold
+  storageClass: ibmc-vpc-block-10iops-tier
   javaOpts: "-Xms1g -Xmx1g"
   resources:
     requests:

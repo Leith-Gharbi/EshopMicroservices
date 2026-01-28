@@ -73,14 +73,14 @@ resources:
 postgresql:
   catalogDb:
     storageSize: 5Gi
-    storageClass: ibmc-block-bronze
+    storageClass: ibmc-vpc-block-10iops-tier
   basketDb:
     storageSize: 5Gi
-    storageClass: ibmc-block-bronze
+    storageClass: ibmc-vpc-block-10iops-tier
 
 sqlserver:
   storageSize: 10Gi
-  storageClass: ibmc-block-bronze
+  storageClass: ibmc-vpc-block-10iops-tier
   resources:
     requests:
       cpu: 250m

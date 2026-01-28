@@ -119,7 +119,7 @@ postgresql:
     password: postgres  # Override in production
     port: 5432
     storageSize: 10Gi
-    storageClass: ibmc-block-bronze
+    storageClass: ibmc-vpc-block-10iops-tier
     resources:
       requests:
         cpu: 100m
@@ -133,7 +133,7 @@ postgresql:
     password: postgres  # Override in production
     port: 5432
     storageSize: 10Gi
-    storageClass: ibmc-block-bronze
+    storageClass: ibmc-vpc-block-10iops-tier
     resources:
       requests:
         cpu: 100m
@@ -152,7 +152,7 @@ sqlserver:
   saPassword: "SwN12345678"  # Override in production
   port: 1433
   storageSize: 20Gi
-  storageClass: ibmc-block-bronze
+  storageClass: ibmc-vpc-block-10iops-tier
   resources:
     requests:
       cpu: 500m
@@ -167,7 +167,7 @@ redis:
   image: redis:7-alpine
   port: 6379
   storageSize: 2Gi
-  storageClass: ibmc-block-bronze
+  storageClass: ibmc-vpc-block-10iops-tier
   resources:
     requests:
       cpu: 50m
@@ -185,7 +185,7 @@ rabbitmq:
   port: 5672
   managementPort: 15672
   storageSize: 5Gi
-  storageClass: ibmc-block-bronze
+  storageClass: ibmc-vpc-block-10iops-tier
   resources:
     requests:
       cpu: 100m
@@ -201,7 +201,7 @@ elasticsearch:
   port: 9200
   transportPort: 9300
   storageSize: 20Gi
-  storageClass: ibmc-block-bronze
+  storageClass: ibmc-vpc-block-10iops-tier
   javaOpts: "-Xms512m -Xmx512m"
   resources:
     requests:
