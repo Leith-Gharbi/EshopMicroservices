@@ -222,17 +222,22 @@ push:healthdeck-web:
   dependencies:
     - build:healthdeck-web
 
-# Deploy to Development environment (eshop-dev namespace)
-# Triggered by: feat/*, fix/*, chore/* branches
-deploy:dev:
-  stage: deploy-dev
+# Deploy template with Helm 3 installation
+.deploy_template: &deploy_template
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
   before_script:
     - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION -g $IBM_CLOUD_RESOURCE_GROUP
     - ibmcloud ks cluster config --cluster $IKS_CLUSTER_NAME
-    - kubectl version --client
+    # Install Helm 3 (the base image has Helm 2)
+    - curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
     - helm version
-    - kubectl get nodes
+    - kubectl version --client
+
+# Deploy to Development environment (eshop-dev namespace)
+# Triggered by: feat/*, fix/*, chore/* branches
+deploy:dev:
+  <<: *deploy_template
+  stage: deploy-dev
   script:
     - helm upgrade --install eshop-dev $HELM_CHART_PATH --namespace eshop-dev --create-namespace --values $HELM_CHART_PATH/values-dev.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --wait --timeout 15m
     - echo "Deployment to eshop-dev complete!"
@@ -248,11 +253,9 @@ deploy:dev:
 
 # Stop development environment
 stop:dev:
+  <<: *deploy_template
   stage: deploy-dev
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
   script:
-    - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION -g $IBM_CLOUD_RESOURCE_GROUP
-    - ibmcloud ks cluster config --cluster $IKS_CLUSTER_NAME
     - helm uninstall eshop-dev --namespace eshop-dev || true
   environment:
     name: development
@@ -264,13 +267,8 @@ stop:dev:
 # Deploy to Staging environment (eshop-staging namespace)
 # Triggered by: dev, develop branches
 deploy:staging:
+  <<: *deploy_template
   stage: deploy-staging
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
-  before_script:
-    - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION -g $IBM_CLOUD_RESOURCE_GROUP
-    - ibmcloud ks cluster config --cluster $IKS_CLUSTER_NAME
-    - kubectl version --client
-    - helm version
   script:
     - helm upgrade --install eshop-staging $HELM_CHART_PATH --namespace eshop-staging --create-namespace --values $HELM_CHART_PATH/values-staging.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --wait --timeout 15m
     - echo "Deployment to eshop-staging complete!"
@@ -286,13 +284,8 @@ deploy:staging:
 # Deploy to Production environment (eshop-prod namespace)
 # Triggered by: main branch or tags v*
 deploy:prod:
+  <<: *deploy_template
   stage: deploy-prod
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
-  before_script:
-    - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION -g $IBM_CLOUD_RESOURCE_GROUP
-    - ibmcloud ks cluster config --cluster $IKS_CLUSTER_NAME
-    - kubectl version --client
-    - helm version
   script:
     - |
       if [ -n "$CI_COMMIT_TAG" ]; then
