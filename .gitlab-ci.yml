@@ -239,7 +239,10 @@ deploy:dev:
   <<: *deploy_template
   stage: deploy-dev
   script:
-    - helm upgrade --install eshop-dev $HELM_CHART_PATH --namespace eshop-dev --create-namespace --values $HELM_CHART_PATH/values-dev.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --wait --timeout 15m
+    # Create ImagePullSecret for IBM Container Registry
+    - kubectl create namespace eshop-dev --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl create secret docker-registry icr-secret --docker-server=$ICR_REGISTRY --docker-username=iamapikey --docker-password=$IBM_CLOUD_API_KEY --namespace=eshop-dev --dry-run=client -o yaml | kubectl apply -f -
+    - helm upgrade --install eshop-dev $HELM_CHART_PATH --namespace eshop-dev --create-namespace --values $HELM_CHART_PATH/values-dev.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --set global.imagePullSecrets[0].name=icr-secret --wait --timeout 15m
     - echo "Deployment to eshop-dev complete!"
     - kubectl get pods -n eshop-dev
     - kubectl get svc -n eshop-dev
@@ -270,7 +273,10 @@ deploy:staging:
   <<: *deploy_template
   stage: deploy-staging
   script:
-    - helm upgrade --install eshop-staging $HELM_CHART_PATH --namespace eshop-staging --create-namespace --values $HELM_CHART_PATH/values-staging.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --wait --timeout 15m
+    # Create ImagePullSecret for IBM Container Registry
+    - kubectl create namespace eshop-staging --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl create secret docker-registry icr-secret --docker-server=$ICR_REGISTRY --docker-username=iamapikey --docker-password=$IBM_CLOUD_API_KEY --namespace=eshop-staging --dry-run=client -o yaml | kubectl apply -f -
+    - helm upgrade --install eshop-staging $HELM_CHART_PATH --namespace eshop-staging --create-namespace --values $HELM_CHART_PATH/values-staging.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --set global.imagePullSecrets[0].name=icr-secret --wait --timeout 15m
     - echo "Deployment to eshop-staging complete!"
     - kubectl get pods -n eshop-staging
     - kubectl get svc -n eshop-staging
@@ -287,13 +293,16 @@ deploy:prod:
   <<: *deploy_template
   stage: deploy-prod
   script:
+    # Create ImagePullSecret for IBM Container Registry
+    - kubectl create namespace eshop-prod --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl create secret docker-registry icr-secret --docker-server=$ICR_REGISTRY --docker-username=iamapikey --docker-password=$IBM_CLOUD_API_KEY --namespace=eshop-prod --dry-run=client -o yaml | kubectl apply -f -
     - |
       if [ -n "$CI_COMMIT_TAG" ]; then
         IMAGE_TAG=$CI_COMMIT_TAG
       else
         IMAGE_TAG=$CI_COMMIT_SHORT_SHA
       fi
-    - helm upgrade --install eshop-prod $HELM_CHART_PATH --namespace eshop-prod --create-namespace --values $HELM_CHART_PATH/values-prod.yaml --set global.imageTag=$IMAGE_TAG --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --wait --timeout 15m
+    - helm upgrade --install eshop-prod $HELM_CHART_PATH --namespace eshop-prod --create-namespace --values $HELM_CHART_PATH/values-prod.yaml --set global.imageTag=$IMAGE_TAG --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --set global.imagePullSecrets[0].name=icr-secret --wait --timeout 15m
     - echo "Deployment to eshop-prod complete!"
     - kubectl get pods -n eshop-prod
     - kubectl get svc -n eshop-prod
