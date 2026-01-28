@@ -1,6 +1,6 @@
 # GitLab CI/CD Pipeline for EshopMicroservices
-# Deploys to IBM Cloud IKS: lgharbi-eshop-cluster-k8s
-# Registry: de.icr.io/eshop-images
+# Deploys to IBM Cloud IKS
+# Variables are configured in GitLab CI/CD Settings
 
 stages:
   - build
@@ -10,14 +10,15 @@ stages:
   - deploy-staging
   - deploy-prod
 
-variables:
-  IBM_CLOUD_REGION: us-south  # Update to your region
-  IBM_CLOUD_RESOURCE_GROUP: default
-  IKS_CLUSTER_NAME: lgharbi-eshop-cluster-k8s
-  ICR_REGISTRY: de.icr.io
-  ICR_NAMESPACE: eshop-images
-  HELM_CHART_PATH: deploy/helm/eshop-microservices
-  DOCKER_DRIVER: overlay2
+# Variables are defined in GitLab CI/CD Settings:
+# - IBM_CLOUD_API_KEY (masked, protected)
+# - IBM_CLOUD_REGION
+# - IBM_CLOUD_RESOURCE_GROUP
+# - IKS_CLUSTER_NAME
+# - ICR_REGISTRY
+# - ICR_NAMESPACE
+# - HELM_CHART_PATH
+# - DOCKER_DRIVER
 
 # Build all Docker images
 .build_template: &build_template
@@ -27,16 +28,17 @@ variables:
     - docker:24-dind
   before_script:
     - docker info
-  only:
-    - develop
-    - main
-    - tags
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(feat|fix|chore)\//'
+    - if: '$CI_COMMIT_BRANCH =~ /^(dev|develop)$/'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_TAG =~ /^v/'
 
 build:catalog-api:
   <<: *build_template
   script:
     - cd src/Services/Catalog/Catalog.API
-    - docker build -t catalog-api:$CI_COMMIT_SHORT_SHA -f Dockerfile ../../../..
+    - docker build -t catalog-api:$CI_COMMIT_SHORT_SHA -f Dockerfile ../../..
     - docker save catalog-api:$CI_COMMIT_SHORT_SHA -o catalog-api.tar
   artifacts:
     paths:
@@ -47,7 +49,7 @@ build:basket-api:
   <<: *build_template
   script:
     - cd src/Services/Basket/Basket.API
-    - docker build -t basket-api:$CI_COMMIT_SHORT_SHA -f Dockerfile ../../../..
+    - docker build -t basket-api:$CI_COMMIT_SHORT_SHA -f Dockerfile ../../..
     - docker save basket-api:$CI_COMMIT_SHORT_SHA -o basket-api.tar
   artifacts:
     paths:
@@ -58,7 +60,7 @@ build:ordering-api:
   <<: *build_template
   script:
     - cd src/Services/Ordering/Ordering.API
-    - docker build -t ordering-api:$CI_COMMIT_SHORT_SHA -f Dockerfile ../../../..
+    - docker build -t ordering-api:$CI_COMMIT_SHORT_SHA -f Dockerfile ../../..
     - docker save ordering-api:$CI_COMMIT_SHORT_SHA -o ordering-api.tar
   artifacts:
     paths:
@@ -69,7 +71,7 @@ build:discount-grpc:
   <<: *build_template
   script:
     - cd src/Services/Discount/Discount.Grpc
-    - docker build -t discount-grpc:$CI_COMMIT_SHORT_SHA -f Dockerfile ../../../..
+    - docker build -t discount-grpc:$CI_COMMIT_SHORT_SHA -f Dockerfile ../../..
     - docker save discount-grpc:$CI_COMMIT_SHORT_SHA -o discount-grpc.tar
   artifacts:
     paths:
@@ -117,10 +119,11 @@ test:unit:
     - dotnet restore src/eshop-micoservices.sln
     - dotnet build src/eshop-micoservices.sln --configuration Release --no-restore
     - dotnet test src/eshop-micoservices.sln --configuration Release --no-build --verbosity normal
-  only:
-    - develop
-    - main
-    - tags
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(feat|fix|chore)\//'
+    - if: '$CI_COMMIT_BRANCH =~ /^(dev|develop)$/'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_TAG =~ /^v/'
 
 # Push images to IBM Container Registry
 .push_template: &push_template
@@ -131,10 +134,11 @@ test:unit:
     - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION -g $IBM_CLOUD_RESOURCE_GROUP
     - ibmcloud cr login
     - ibmcloud cr namespace-list | grep -q $ICR_NAMESPACE || ibmcloud cr namespace-add $ICR_NAMESPACE
-  only:
-    - develop
-    - main
-    - tags
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(feat|fix|chore)\//'
+    - if: '$CI_COMMIT_BRANCH =~ /^(dev|develop)$/'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_TAG =~ /^v/'
 
 push:catalog-api:
   <<: *push_template
@@ -214,6 +218,7 @@ push:healthdeck-web:
     - build:healthdeck-web
 
 # Deploy to Development environment (eshop-dev namespace)
+# Triggered by: feat/*, fix/*, chore/* branches
 deploy:dev:
   stage: deploy-dev
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
@@ -232,8 +237,9 @@ deploy:dev:
     name: development
     url: http://dev-eshop.yourcompany.com
     on_stop: stop:dev
-  only:
-    - develop
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(feat|fix|chore)\//'
+      when: always
 
 # Stop development environment
 stop:dev:
@@ -246,11 +252,12 @@ stop:dev:
   environment:
     name: development
     action: stop
-  when: manual
-  only:
-    - develop
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(feat|fix|chore)\//'
+      when: manual
 
 # Deploy to Staging environment (eshop-staging namespace)
+# Triggered by: dev, develop branches
 deploy:staging:
   stage: deploy-staging
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
@@ -267,10 +274,12 @@ deploy:staging:
   environment:
     name: staging
     url: http://staging-eshop.yourcompany.com
-  only:
-    - main
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(dev|develop)$/'
+      when: always
 
 # Deploy to Production environment (eshop-prod namespace)
+# Triggered by: main branch or tags v*
 deploy:prod:
   stage: deploy-prod
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
@@ -280,14 +289,22 @@ deploy:prod:
     - kubectl version --client
     - helm version
   script:
-    - helm upgrade --install eshop-prod $HELM_CHART_PATH --namespace eshop-prod --create-namespace --values $HELM_CHART_PATH/values-prod.yaml --set global.imageTag=$CI_COMMIT_TAG --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --wait --timeout 15m
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        IMAGE_TAG=$CI_COMMIT_TAG
+      else
+        IMAGE_TAG=$CI_COMMIT_SHORT_SHA
+      fi
+    - helm upgrade --install eshop-prod $HELM_CHART_PATH --namespace eshop-prod --create-namespace --values $HELM_CHART_PATH/values-prod.yaml --set global.imageTag=$IMAGE_TAG --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --wait --timeout 15m
     - echo "Deployment to eshop-prod complete!"
     - kubectl get pods -n eshop-prod
     - kubectl get svc -n eshop-prod
-    - echo "Production deployment successful! Version - $CI_COMMIT_TAG"
+    - echo "Production deployment successful! Version - $IMAGE_TAG"
   environment:
     name: production
     url: http://eshop.yourcompany.com
-  when: manual
-  only:
-    - tags
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+    - if: '$CI_COMMIT_TAG =~ /^v/'
+      when: manual
