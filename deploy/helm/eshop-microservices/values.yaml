@@ -8,6 +8,10 @@ global:
   imageRegistry: de.icr.io/eshop-images
   imageTag: latest
   imagePullPolicy: IfNotPresent
+  imagePullSecrets: []
+  # Example:
+  # imagePullSecrets:
+  #   - name: icr-secret
 
 # Service images
 images:
