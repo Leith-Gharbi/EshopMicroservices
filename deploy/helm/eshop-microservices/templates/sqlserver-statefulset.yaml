@@ -20,9 +20,29 @@ spec:
         {{- include "eshop.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: sqlserver
     spec:
+      securityContext:
+        fsGroup: 10001
+      initContainers:
+      - name: fix-permissions
+        image: busybox:latest
+        command:
+        - sh
+        - -c
+        - |
+          chown -R 10001:10001 /var/opt/mssql
+          chmod -R 755 /var/opt/mssql
+        volumeMounts:
+        - name: data
+          mountPath: /var/opt/mssql
+        securityContext:
+          runAsUser: 0
       containers:
       - name: sqlserver
         image: {{ .Values.sqlserver.image }}
+        securityContext:
+          runAsUser: 10001
+          runAsGroup: 10001
+          runAsNonRoot: true
         imagePullPolicy: IfNotPresent
         ports:
         - name: sqlserver
@@ -48,7 +68,7 @@ spec:
             command:
             - /bin/sh
             - -c
-            - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -Q "SELECT 1"
+            - /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -Q "SELECT 1" -C
           initialDelaySeconds: 90
           periodSeconds: 20
           timeoutSeconds: 10
@@ -58,7 +78,7 @@ spec:
             command:
             - /bin/sh
             - -c
-            - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -Q "SELECT 1"
+            - /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -Q "SELECT 1" -C
           initialDelaySeconds: 60
           periodSeconds: 15
           timeoutSeconds: 10
