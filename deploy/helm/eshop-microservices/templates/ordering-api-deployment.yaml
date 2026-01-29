@@ -63,11 +63,18 @@ spec:
             name: {{ include "eshop.fullname" . }}-ordering-api-config
         resources:
           {{- toYaml .Values.resources.orderingApi | nindent 10 }}
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
         livenessProbe:
           httpGet:
             path: /health
             port: http
-          initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
@@ -75,7 +82,6 @@ spec:
           httpGet:
             path: /health
             port: http
-          initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
