@@ -79,7 +79,7 @@ Build full image name for a service
 {{- $service := index . 0 -}}
 {{- $context := index . 1 -}}
 {{- $imageConfig := index $context.Values.images $service -}}
-{{- $tag := $imageConfig.tag | default $context.Values.global.imageTag -}}
+{{- $tag := $imageConfig.tag | default $context.Values.global.imageTag | toString -}}
 {{- printf "%s/%s:%s" $context.Values.global.imageRegistry $imageConfig.repository $tag -}}
 {{- end }}
 
