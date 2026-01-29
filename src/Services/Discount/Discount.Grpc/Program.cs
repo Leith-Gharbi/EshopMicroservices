@@ -36,13 +36,13 @@ app.UseMigration();
 // Add HTTP logging middleware for Elasticsearch enrichment
 app.UseElasticsearchHttpLogging();
 
-app.MapGrpcService<DiscountService>();
-app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
-
-// Map Health Check endpoint
+// Health checks MUST be registered before other route handlers
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
+
+app.MapGrpcService<DiscountService>();
+app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
 
 app.Run();

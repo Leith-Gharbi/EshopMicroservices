@@ -3,12 +3,13 @@
 # Variables are configured in GitLab CI/CD Settings
 
 stages:
-  - build
-  - test
-  - push
-  - deploy-dev
-  - deploy-staging
-  - deploy-prod
+  - 🔨 build
+  - 🧪 test
+  - 📦 push
+  - 🚀 deploy-dev
+  - 🎭 deploy-staging
+  - 🏭 deploy-prod
+  - 🧹 cleanup
 
 # Variables are defined in GitLab CI/CD Settings:
 # - IBM_CLOUD_API_KEY (masked, protected)
@@ -22,7 +23,7 @@ stages:
 
 # Build all Docker images
 .build_template: &build_template
-  stage: build
+  stage: 🔨 build
   image: docker:latest
   # Using socket binding - no dind service needed
   before_script:
@@ -112,7 +113,7 @@ build:healthdeck-web:
 
 # Run tests
 test:unit:
-  stage: test
+  stage: 🧪 test
   image: mcr.microsoft.com/dotnet/sdk:8.0
   script:
     - dotnet restore src/eshop-micoservices.sln
@@ -126,7 +127,7 @@ test:unit:
 
 # Push images to IBM Container Registry
 .push_template: &push_template
-  stage: push
+  stage: 📦 push
   image: docker:latest
   # Using socket binding - no dind service needed
   before_script:
@@ -261,7 +262,7 @@ push:healthdeck-web:
 # Triggered by: feat/*, fix/*, chore/* branches
 deploy:dev:
   <<: *deploy_template
-  stage: deploy-dev
+  stage: 🚀 deploy-dev
   needs:
     - job: push:catalog-api
       artifacts: false
@@ -303,7 +304,7 @@ deploy:dev:
 # Stop development environment
 stop:dev:
   <<: *deploy_template
-  stage: deploy-dev
+  stage: 🚀 deploy-dev
   script:
     - helm uninstall eshop-dev --namespace eshop-dev || true
   environment:
@@ -317,7 +318,7 @@ stop:dev:
 # Triggered by: dev, develop branches
 deploy:staging:
   <<: *deploy_template
-  stage: deploy-staging
+  stage: 🎭 deploy-staging
   needs:
     - job: push:catalog-api
       artifacts: false
@@ -359,7 +360,7 @@ deploy:staging:
 # Triggered by: main branch or tags v*
 deploy:prod:
   <<: *deploy_template
-  stage: deploy-prod
+  stage: 🏭 deploy-prod
   needs:
     - job: push:catalog-api
       artifacts: false
@@ -405,3 +406,38 @@ deploy:prod:
       when: manual
     - if: '$CI_COMMIT_TAG =~ /^v/'
       when: manual
+
+# ============================================================
+# CLEANUP STAGE - Remove old images to free up registry quota
+# ============================================================
+
+# Cleanup old images from IBM Container Registry
+# Keeps only the 2 most recent versions of each image
+cleanup:registry:
+  stage: 🧹 cleanup
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
+  before_script:
+    - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION -g $IBM_CLOUD_RESOURCE_GROUP
+    - ibmcloud cr login
+  script:
+    - echo "Setting retention policy to keep only 2 images per repository..."
+    # Set retention policy to keep 2 most recent images for the namespace
+    - ibmcloud cr retention-policy-set --images 2 $ICR_NAMESPACE
+    # Run retention to apply the policy immediately
+    - ibmcloud cr retention-run $ICR_NAMESPACE
+    # Show current images after cleanup
+    - echo "Current images in registry:"
+    - ibmcloud cr images --restrict $ICR_NAMESPACE
+    # Show quota usage
+    - echo "Registry quota usage:"
+    - ibmcloud cr quota
+  rules:
+    # Run after successful deployment to dev
+    - if: '$CI_COMMIT_BRANCH =~ /^(feat|fix|chore)\//'
+      when: on_success
+    # Run after successful deployment to staging
+    - if: '$CI_COMMIT_BRANCH =~ /^(dev|develop)$/'
+      when: on_success
+    # Can be triggered manually anytime
+    - when: manual
+      allow_failure: true

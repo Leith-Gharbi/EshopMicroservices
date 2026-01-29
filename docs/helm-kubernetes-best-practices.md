@@ -13,6 +13,7 @@ Ce document résume les bonnes pratiques et solutions appliquées pour résoudre
 7. [Helm Templates - Bonnes pratiques](#7-helm-templates---bonnes-pratiques)
 8. [Health Checks UI Configuration](#8-health-checks-ui-configuration)
 9. [ASP.NET Core - Ordre des Middlewares](#9-aspnet-core---ordre-des-middlewares)
+10. [Gestion du quota du Container Registry](#10-gestion-du-quota-du-container-registry)
 
 ---
 
@@ -531,6 +532,82 @@ app.Run();
 │  RÉSULTAT: 404          │   RÉSULTAT: 200 ✅                │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 10. Gestion du quota du Container Registry
+
+### Problème
+
+```
+Error: QUOTA_EXCEEDED: You have exceeded your storage quota
+```
+
+Le quota de stockage IBM Container Registry est atteint à cause de l'accumulation d'anciennes images.
+
+### Solution 1: Politique de rétention (Recommandé)
+
+Configurer une politique de rétention pour garder uniquement les N dernières images :
+
+```bash
+# Garder les 2 dernières images par repository
+ibmcloud cr retention-policy-set --images 2 $ICR_NAMESPACE
+
+# Appliquer immédiatement la politique
+ibmcloud cr retention-run $ICR_NAMESPACE
+
+# Vérifier le quota
+ibmcloud cr quota
+```
+
+### Solution 2: Job de nettoyage automatique dans le pipeline
+
+```yaml
+# .gitlab-ci.yml
+cleanup:registry:
+  stage: cleanup
+  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
+  before_script:
+    - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION
+    - ibmcloud cr login
+  script:
+    # Configurer la politique de rétention
+    - ibmcloud cr retention-policy-set --images 2 $ICR_NAMESPACE
+    # Exécuter le nettoyage
+    - ibmcloud cr retention-run $ICR_NAMESPACE
+    # Afficher l'état
+    - ibmcloud cr images --restrict $ICR_NAMESPACE
+    - ibmcloud cr quota
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(feat|fix|chore)\//'
+      when: on_success
+```
+
+### Commandes utiles
+
+```bash
+# Lister toutes les images
+ibmcloud cr images --restrict $ICR_NAMESPACE
+
+# Voir la politique de rétention actuelle
+ibmcloud cr retention-policy-list
+
+# Supprimer une image spécifique
+ibmcloud cr image-rm $ICR_REGISTRY/$ICR_NAMESPACE/catalog-api:old-tag
+
+# Supprimer toutes les images non taggées
+ibmcloud cr image-prune-untagged --restrict $ICR_NAMESPACE
+
+# Voir le quota et l'utilisation
+ibmcloud cr quota
+```
+
+### Bonnes pratiques
+
+1. **Politique de rétention** - Garder 2-3 images max par repository
+2. **Tags significatifs** - Utiliser des tags comme le commit SHA ou version sémantique
+3. **Nettoyage régulier** - Exécuter le nettoyage après chaque déploiement
+4. **Monitoring** - Vérifier le quota régulièrement avec `ibmcloud cr quota`
 
 ---
 
