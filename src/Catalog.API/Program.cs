@@ -65,16 +65,15 @@ var app = builder.Build();
 // Add HTTP logging middleware for Elasticsearch enrichment
 app.UseElasticsearchHttpLogging();
 
+// Health checks MUST be registered before other route handlers
+app.UseHealthChecks("/health" , new HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
 app.MapCarter(); // Map Carter endpoints ( Map tous les endpoints Carter [ tous les classes qui implement ICarterModule)
 
-
-app.UseExceptionHandler(options => { }); // Use the exception handler middleware ( pour g�rer les exceptions globalement) [ doit etre ajout� pour que AddExceptionHandler fonctionne (Appelle l�IExceptionHandler que tu as enregistr� (CustomExceptionHandler dans ton cas))  ] 
-
-app.UseHealthChecks("/health" , new HealthCheckOptions 
-{ 
-    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-
-} ); // Map the health check endpoint ( pour v�rifier la sant� de l'application)
+app.UseExceptionHandler(options => { }); // Use the exception handler middleware
 
 #endregion
 

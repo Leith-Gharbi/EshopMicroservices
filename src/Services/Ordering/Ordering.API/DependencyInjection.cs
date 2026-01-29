@@ -20,16 +20,17 @@ namespace Ordering.API
 
         public static WebApplication useApiServices(this WebApplication app)
         {
-
             // Add HTTP logging middleware for Elasticsearch enrichment
             app.UseElasticsearchHttpLogging();
 
-            app.MapCarter();
-            app.UseExceptionHandler(opt => { }); // Use the exception handler middleware ( pour gérer les exceptions globalement) [ doit etre ajouté pour que AddExceptionHandler fonctionne (Appelle l’IExceptionHandler que tu as enregistré (CustomExceptionHandler dans ton cas))  ]
+            // Health checks should be registered early
             app.MapHealthChecks("/health", new HealthCheckOptions
             {
                 ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
             });
+
+            app.MapCarter();
+            app.UseExceptionHandler(opt => { });
             return app;
         }
     }
