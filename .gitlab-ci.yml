@@ -288,7 +288,7 @@ deploy:dev:
         echo "Release is stuck in $RELEASE_STATUS state. Attempting rollback..."
         helm rollback eshop-dev -n eshop-dev || helm uninstall eshop-dev -n eshop-dev --no-hooks || true
       fi
-    - helm upgrade --install eshop-dev $HELM_CHART_PATH --namespace eshop-dev --create-namespace --values $HELM_CHART_PATH/values-dev.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --set global.imagePullSecrets[0].name=icr-secret --wait --timeout 15m
+    - helm upgrade --install eshop-dev $HELM_CHART_PATH --namespace eshop-dev --create-namespace --values $HELM_CHART_PATH/values-dev.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --set global.imagePullSecrets[0].name=icr-secret --set global.deploymentTimestamp=$(date +%s) --wait --timeout 15m
     - echo "Deployment to eshop-dev complete!"
     - kubectl get pods -n eshop-dev
     - kubectl get svc -n eshop-dev
@@ -344,7 +344,7 @@ deploy:staging:
         echo "Release is stuck in $RELEASE_STATUS state. Attempting rollback..."
         helm rollback eshop-staging -n eshop-staging || helm uninstall eshop-staging -n eshop-staging --no-hooks || true
       fi
-    - helm upgrade --install eshop-staging $HELM_CHART_PATH --namespace eshop-staging --create-namespace --values $HELM_CHART_PATH/values-staging.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --set global.imagePullSecrets[0].name=icr-secret --wait --timeout 15m
+    - helm upgrade --install eshop-staging $HELM_CHART_PATH --namespace eshop-staging --create-namespace --values $HELM_CHART_PATH/values-staging.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --set global.imagePullSecrets[0].name=icr-secret --set global.deploymentTimestamp=$(date +%s) --wait --timeout 15m
     - echo "Deployment to eshop-staging complete!"
     - kubectl get pods -n eshop-staging
     - kubectl get svc -n eshop-staging
@@ -392,7 +392,7 @@ deploy:prod:
         echo "Release is stuck in $RELEASE_STATUS state. Attempting rollback..."
         helm rollback eshop-prod -n eshop-prod || helm uninstall eshop-prod -n eshop-prod --no-hooks || true
       fi
-    - helm upgrade --install eshop-prod $HELM_CHART_PATH --namespace eshop-prod --create-namespace --values $HELM_CHART_PATH/values-prod.yaml --set global.imageTag=$IMAGE_TAG --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --set global.imagePullSecrets[0].name=icr-secret --wait --timeout 15m
+    - helm upgrade --install eshop-prod $HELM_CHART_PATH --namespace eshop-prod --create-namespace --values $HELM_CHART_PATH/values-prod.yaml --set global.imageTag=$IMAGE_TAG --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --set global.imagePullSecrets[0].name=icr-secret --set global.deploymentTimestamp=$(date +%s) --wait --timeout 15m
     - echo "Deployment to eshop-prod complete!"
     - kubectl get pods -n eshop-prod
     - kubectl get svc -n eshop-prod

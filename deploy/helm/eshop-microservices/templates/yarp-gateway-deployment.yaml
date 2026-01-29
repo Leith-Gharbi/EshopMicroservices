@@ -16,6 +16,8 @@ spec:
       app.kubernetes.io/component: yarp-gateway
   template:
     metadata:
+      annotations:
+        deploymentTimestamp: {{ .Values.global.deploymentTimestamp | default "0" | quote }}
       labels:
         {{- include "eshop.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: yarp-gateway
