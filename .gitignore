@@ -61,7 +61,7 @@ Generated\ Files/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
-
+.claude/
 # Approval Tests result files
 *.received.*
 

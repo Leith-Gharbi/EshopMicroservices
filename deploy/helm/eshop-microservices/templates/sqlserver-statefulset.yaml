@@ -49,16 +49,20 @@ spec:
             - /bin/sh
             - -c
             - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -Q "SELECT 1"
-          initialDelaySeconds: 60
+          initialDelaySeconds: 90
           periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 6
         readinessProbe:
           exec:
             command:
             - /bin/sh
             - -c
             - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -Q "SELECT 1"
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 6
   volumeClaimTemplates:
   - metadata:
       name: data

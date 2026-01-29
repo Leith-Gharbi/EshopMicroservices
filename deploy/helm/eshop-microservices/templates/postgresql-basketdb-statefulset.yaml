@@ -51,16 +51,20 @@ spec:
             - /bin/sh
             - -c
             - pg_isready -U {{ .Values.postgresql.basketDb.user }}
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 6
         readinessProbe:
           exec:
             command:
             - /bin/sh
             - -c
             - pg_isready -U {{ .Values.postgresql.basketDb.user }}
-          initialDelaySeconds: 5
-          periodSeconds: 5
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
   volumeClaimTemplates:
   - metadata:
       name: data
