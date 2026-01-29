@@ -127,10 +127,16 @@ test:unit:
 # Push images to IBM Container Registry
 .push_template: &push_template
   stage: push
-  image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
+  image: docker:latest
   # Using socket binding - no dind service needed
   before_script:
+    # Install IBM Cloud CLI
+    - apk add --no-cache curl bash
+    - curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
     - ibmcloud --version
+    # Install container registry plugin
+    - ibmcloud plugin install container-registry -f
+    # Login to IBM Cloud
     - ibmcloud login --apikey $IBM_CLOUD_API_KEY -r $IBM_CLOUD_REGION -g $IBM_CLOUD_RESOURCE_GROUP
     - ibmcloud cr login
     - ibmcloud cr namespace-list | grep -q $ICR_NAMESPACE || ibmcloud cr namespace-add $ICR_NAMESPACE
