@@ -58,18 +58,28 @@ spec:
           value: "http://{{ include "eshop.fullname" . }}-yarp-gateway/health"
         resources:
           {{- toYaml .Values.resources.healthdeckWeb | nindent 10 }}
+        startupProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
         livenessProbe:
           httpGet:
-            path: /healthz
+            path: /
             port: http
-          initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /healthz
+            path: /
             port: http
-          initialDelaySeconds: 10
           periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
