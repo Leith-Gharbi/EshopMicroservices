@@ -23,7 +23,7 @@ stages:
 # Build all Docker images
 .build_template: &build_template
   stage: build
-  image: docker:24-cli
+  image: docker:latest
   # Using socket binding - no dind service needed
   before_script:
     - docker info
