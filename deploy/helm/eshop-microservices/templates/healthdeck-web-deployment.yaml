@@ -52,6 +52,10 @@ spec:
           value: "Ordering API"
         - name: HealthChecksUI__HealthChecks__2__Uri
           value: "http://{{ include "eshop.fullname" . }}-ordering-api/health"
+        - name: HealthChecksUI__HealthChecks__3__Name
+          value: "API Gateway (YARP)"
+        - name: HealthChecksUI__HealthChecks__3__Uri
+          value: "http://{{ include "eshop.fullname" . }}-yarp-gateway/health"
         resources:
           {{- toYaml .Values.resources.healthdeckWeb | nindent 10 }}
         livenessProbe:

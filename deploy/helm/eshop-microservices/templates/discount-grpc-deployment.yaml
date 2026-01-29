@@ -40,16 +40,28 @@ spec:
             name: {{ include "eshop.fullname" . }}-discount-grpc-config
         resources:
           {{- toYaml .Values.resources.discountGrpc | nindent 10 }}
-        livenessProbe:
-          exec:
-            command: ["/bin/grpc_health_probe", "-addr=:{{ .Values.ports.discountGrpc }}"]
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          exec:
-            command: ["/bin/grpc_health_probe", "-addr=:{{ .Values.ports.discountGrpc }}"]
+        startupProbe:
+          httpGet:
+            path: /health
+            port: grpc
           initialDelaySeconds: 10
           periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: grpc
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: grpc
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
