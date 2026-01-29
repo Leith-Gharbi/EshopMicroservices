@@ -23,10 +23,17 @@ stages:
 # Build all Docker images
 .build_template: &build_template
   stage: build
-  image: docker:24-dind
+  image: docker:24-cli
   services:
-    - docker:24-dind
+    - name: docker:24-dind
+      alias: docker
+      variables:
+        DOCKER_TLS_CERTDIR: ""
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
   before_script:
+    - until docker info >/dev/null 2>&1; do echo "Waiting for Docker..."; sleep 2; done
     - docker info
   rules:
     - if: '$CI_COMMIT_BRANCH =~ /^(feat|fix|chore)\//'
@@ -130,7 +137,10 @@ test:unit:
   stage: push
   image: icr.io/continuous-delivery/pipeline/pipeline-base-image:2.17
   services:
-    - docker:24-dind
+    - name: docker:24-dind
+      alias: docker
+      variables:
+        DOCKER_TLS_CERTDIR: ""
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
