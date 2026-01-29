@@ -252,6 +252,8 @@ push:healthdeck-web:
     - ibmcloud ks cluster config --cluster $IKS_CLUSTER_NAME
     # Install Helm 3 (the base image has Helm 2)
     - curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    # Install jq for JSON parsing (needed for stuck release detection)
+    - apt-get update -qq && apt-get install -qq -y jq > /dev/null 2>&1 || yum install -y -q jq 2>/dev/null || true
     - helm version
     - kubectl version --client
 
@@ -279,6 +281,13 @@ deploy:dev:
     # Create ImagePullSecret for IBM Container Registry
     - kubectl create namespace eshop-dev --dry-run=client -o yaml | kubectl apply -f -
     - kubectl create secret docker-registry icr-secret --docker-server=$ICR_REGISTRY --docker-username=iamapikey --docker-password=$IBM_CLOUD_API_KEY --namespace=eshop-dev --dry-run=client -o yaml | kubectl apply -f -
+    # Check and fix stuck Helm releases
+    - |
+      RELEASE_STATUS=$(helm status eshop-dev -n eshop-dev -o json 2>/dev/null | jq -r '.info.status' || echo "not-found")
+      if [ "$RELEASE_STATUS" = "pending-install" ] || [ "$RELEASE_STATUS" = "pending-upgrade" ] || [ "$RELEASE_STATUS" = "pending-rollback" ]; then
+        echo "Release is stuck in $RELEASE_STATUS state. Attempting rollback..."
+        helm rollback eshop-dev -n eshop-dev || helm uninstall eshop-dev -n eshop-dev --no-hooks || true
+      fi
     - helm upgrade --install eshop-dev $HELM_CHART_PATH --namespace eshop-dev --create-namespace --values $HELM_CHART_PATH/values-dev.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --set global.imagePullSecrets[0].name=icr-secret --wait --timeout 15m
     - echo "Deployment to eshop-dev complete!"
     - kubectl get pods -n eshop-dev
@@ -328,6 +337,13 @@ deploy:staging:
     # Create ImagePullSecret for IBM Container Registry
     - kubectl create namespace eshop-staging --dry-run=client -o yaml | kubectl apply -f -
     - kubectl create secret docker-registry icr-secret --docker-server=$ICR_REGISTRY --docker-username=iamapikey --docker-password=$IBM_CLOUD_API_KEY --namespace=eshop-staging --dry-run=client -o yaml | kubectl apply -f -
+    # Check and fix stuck Helm releases
+    - |
+      RELEASE_STATUS=$(helm status eshop-staging -n eshop-staging -o json 2>/dev/null | jq -r '.info.status' || echo "not-found")
+      if [ "$RELEASE_STATUS" = "pending-install" ] || [ "$RELEASE_STATUS" = "pending-upgrade" ] || [ "$RELEASE_STATUS" = "pending-rollback" ]; then
+        echo "Release is stuck in $RELEASE_STATUS state. Attempting rollback..."
+        helm rollback eshop-staging -n eshop-staging || helm uninstall eshop-staging -n eshop-staging --no-hooks || true
+      fi
     - helm upgrade --install eshop-staging $HELM_CHART_PATH --namespace eshop-staging --create-namespace --values $HELM_CHART_PATH/values-staging.yaml --set global.imageTag=$CI_COMMIT_SHORT_SHA --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --set global.imagePullSecrets[0].name=icr-secret --wait --timeout 15m
     - echo "Deployment to eshop-staging complete!"
     - kubectl get pods -n eshop-staging
@@ -368,6 +384,13 @@ deploy:prod:
         IMAGE_TAG=$CI_COMMIT_TAG
       else
         IMAGE_TAG=$CI_COMMIT_SHORT_SHA
+      fi
+    # Check and fix stuck Helm releases
+    - |
+      RELEASE_STATUS=$(helm status eshop-prod -n eshop-prod -o json 2>/dev/null | jq -r '.info.status' || echo "not-found")
+      if [ "$RELEASE_STATUS" = "pending-install" ] || [ "$RELEASE_STATUS" = "pending-upgrade" ] || [ "$RELEASE_STATUS" = "pending-rollback" ]; then
+        echo "Release is stuck in $RELEASE_STATUS state. Attempting rollback..."
+        helm rollback eshop-prod -n eshop-prod || helm uninstall eshop-prod -n eshop-prod --no-hooks || true
       fi
     - helm upgrade --install eshop-prod $HELM_CHART_PATH --namespace eshop-prod --create-namespace --values $HELM_CHART_PATH/values-prod.yaml --set global.imageTag=$IMAGE_TAG --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE --set global.imagePullSecrets[0].name=icr-secret --wait --timeout 15m
     - echo "Deployment to eshop-prod complete!"
