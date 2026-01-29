@@ -153,8 +153,11 @@ push:catalog-api:
     - docker tag catalog-api:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/catalog-api:latest
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/catalog-api:$CI_COMMIT_SHORT_SHA
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/catalog-api:latest
-  dependencies:
-    - build:catalog-api
+  needs:
+    - job: build:catalog-api
+      artifacts: true
+    - job: test:unit
+      artifacts: false
 
 push:basket-api:
   <<: *push_template
@@ -164,8 +167,11 @@ push:basket-api:
     - docker tag basket-api:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/basket-api:latest
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/basket-api:$CI_COMMIT_SHORT_SHA
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/basket-api:latest
-  dependencies:
-    - build:basket-api
+  needs:
+    - job: build:basket-api
+      artifacts: true
+    - job: test:unit
+      artifacts: false
 
 push:ordering-api:
   <<: *push_template
@@ -175,8 +181,11 @@ push:ordering-api:
     - docker tag ordering-api:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/ordering-api:latest
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/ordering-api:$CI_COMMIT_SHORT_SHA
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/ordering-api:latest
-  dependencies:
-    - build:ordering-api
+  needs:
+    - job: build:ordering-api
+      artifacts: true
+    - job: test:unit
+      artifacts: false
 
 push:discount-grpc:
   <<: *push_template
@@ -186,8 +195,11 @@ push:discount-grpc:
     - docker tag discount-grpc:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/discount-grpc:latest
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/discount-grpc:$CI_COMMIT_SHORT_SHA
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/discount-grpc:latest
-  dependencies:
-    - build:discount-grpc
+  needs:
+    - job: build:discount-grpc
+      artifacts: true
+    - job: test:unit
+      artifacts: false
 
 push:yarp-gateway:
   <<: *push_template
@@ -197,8 +209,11 @@ push:yarp-gateway:
     - docker tag yarp-gateway:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/yarp-gateway:latest
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/yarp-gateway:$CI_COMMIT_SHORT_SHA
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/yarp-gateway:latest
-  dependencies:
-    - build:yarp-gateway
+  needs:
+    - job: build:yarp-gateway
+      artifacts: true
+    - job: test:unit
+      artifacts: false
 
 push:shopping-web:
   <<: *push_template
@@ -208,8 +223,11 @@ push:shopping-web:
     - docker tag shopping-web:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/shopping-web:latest
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/shopping-web:$CI_COMMIT_SHORT_SHA
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/shopping-web:latest
-  dependencies:
-    - build:shopping-web
+  needs:
+    - job: build:shopping-web
+      artifacts: true
+    - job: test:unit
+      artifacts: false
 
 push:healthdeck-web:
   <<: *push_template
@@ -219,8 +237,11 @@ push:healthdeck-web:
     - docker tag healthdeck-web:$CI_COMMIT_SHORT_SHA $ICR_REGISTRY/$ICR_NAMESPACE/healthdeck-web:latest
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/healthdeck-web:$CI_COMMIT_SHORT_SHA
     - docker push $ICR_REGISTRY/$ICR_NAMESPACE/healthdeck-web:latest
-  dependencies:
-    - build:healthdeck-web
+  needs:
+    - job: build:healthdeck-web
+      artifacts: true
+    - job: test:unit
+      artifacts: false
 
 # Deploy template with Helm 3 installation
 .deploy_template: &deploy_template
@@ -238,6 +259,21 @@ push:healthdeck-web:
 deploy:dev:
   <<: *deploy_template
   stage: deploy-dev
+  needs:
+    - job: push:catalog-api
+      artifacts: false
+    - job: push:basket-api
+      artifacts: false
+    - job: push:ordering-api
+      artifacts: false
+    - job: push:discount-grpc
+      artifacts: false
+    - job: push:yarp-gateway
+      artifacts: false
+    - job: push:shopping-web
+      artifacts: false
+    - job: push:healthdeck-web
+      artifacts: false
   script:
     # Create ImagePullSecret for IBM Container Registry
     - kubectl create namespace eshop-dev --dry-run=client -o yaml | kubectl apply -f -
@@ -272,6 +308,21 @@ stop:dev:
 deploy:staging:
   <<: *deploy_template
   stage: deploy-staging
+  needs:
+    - job: push:catalog-api
+      artifacts: false
+    - job: push:basket-api
+      artifacts: false
+    - job: push:ordering-api
+      artifacts: false
+    - job: push:discount-grpc
+      artifacts: false
+    - job: push:yarp-gateway
+      artifacts: false
+    - job: push:shopping-web
+      artifacts: false
+    - job: push:healthdeck-web
+      artifacts: false
   script:
     # Create ImagePullSecret for IBM Container Registry
     - kubectl create namespace eshop-staging --dry-run=client -o yaml | kubectl apply -f -
@@ -292,6 +343,21 @@ deploy:staging:
 deploy:prod:
   <<: *deploy_template
   stage: deploy-prod
+  needs:
+    - job: push:catalog-api
+      artifacts: false
+    - job: push:basket-api
+      artifacts: false
+    - job: push:ordering-api
+      artifacts: false
+    - job: push:discount-grpc
+      artifacts: false
+    - job: push:yarp-gateway
+      artifacts: false
+    - job: push:shopping-web
+      artifacts: false
+    - job: push:healthdeck-web
+      artifacts: false
   script:
     # Create ImagePullSecret for IBM Container Registry
     - kubectl create namespace eshop-prod --dry-run=client -o yaml | kubectl apply -f -
