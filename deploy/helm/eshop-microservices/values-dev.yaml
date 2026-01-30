@@ -83,11 +83,11 @@ sqlserver:
   storageClass: ibmc-vpc-block-10iops-tier
   resources:
     requests:
-      cpu: 250m
-      memory: 1Gi
+      cpu: 100m      # Reduced for dev - cluster has limited capacity
+      memory: 512Mi  # Reduced for dev
     limits:
-      cpu: 1000m
-      memory: 2Gi
+      cpu: 500m
+      memory: 1Gi
 
 redis:
   storageSize: 1Gi
