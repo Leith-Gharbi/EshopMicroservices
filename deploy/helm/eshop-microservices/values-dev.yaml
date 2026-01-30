@@ -95,16 +95,19 @@ redis:
 rabbitmq:
   storageSize: 2Gi
 
+# Elasticsearch disabled in dev to save resources (SQL Server needs 2GB)
+# Logs will go to console only in dev environment
 elasticsearch:
+  enabled: false
   storageSize: 10Gi
-  javaOpts: "-Xms384m -Xmx384m"  # Minimum viable for ES
+  javaOpts: "-Xms512m -Xmx512m"
   resources:
     requests:
-      cpu: 100m
-      memory: 512Mi
-    limits:
       cpu: 500m
-      memory: 768Mi  # Slightly increased for stability
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
 
 # Kibana reduced resources for dev
 kibana:
