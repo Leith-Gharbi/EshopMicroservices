@@ -97,14 +97,14 @@ rabbitmq:
 
 elasticsearch:
   storageSize: 10Gi
-  javaOpts: "-Xms256m -Xmx256m"  # Reduced for dev
+  javaOpts: "-Xms384m -Xmx384m"  # Minimum viable for ES
   resources:
     requests:
       cpu: 100m
-      memory: 512Mi  # Reduced to make room for SQL Server
+      memory: 512Mi
     limits:
       cpu: 500m
-      memory: 512Mi
+      memory: 768Mi  # Slightly increased for stability
 
 # Kibana reduced resources for dev
 kibana:
