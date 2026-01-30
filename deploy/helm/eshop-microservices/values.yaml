@@ -242,21 +242,21 @@ ingress:
         - path: /
           pathType: Prefix
           service: shopping-web
-          port: 8080
+          port: 80
     # API Gateway (YARP)
     - host: api.CLUSTER_SUBDOMAIN
       paths:
         - path: /
           pathType: Prefix
           service: yarp-gateway
-          port: 8080
+          port: 80
     # Health Dashboard
     - host: health.CLUSTER_SUBDOMAIN
       paths:
         - path: /
           pathType: Prefix
           service: healthdeck-web
-          port: 8080
+          port: 80
     # Kibana (Logs Dashboard)
     - host: kibana.CLUSTER_SUBDOMAIN
       paths:
