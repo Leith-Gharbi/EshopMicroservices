@@ -83,11 +83,11 @@ sqlserver:
   storageClass: ibmc-vpc-block-10iops-tier
   resources:
     requests:
-      cpu: 100m      # Reduced for dev - cluster has limited capacity
-      memory: 512Mi  # Reduced for dev
+      cpu: 100m
+      memory: 2Gi    # SQL Server minimum requirement is 2GB
     limits:
       cpu: 500m
-      memory: 1Gi
+      memory: 2Gi
 
 redis:
   storageSize: 1Gi
@@ -97,14 +97,24 @@ rabbitmq:
 
 elasticsearch:
   storageSize: 10Gi
-  javaOpts: "-Xms512m -Xmx512m"
+  javaOpts: "-Xms256m -Xmx256m"  # Reduced for dev
   resources:
     requests:
-      cpu: 250m
-      memory: 1Gi
+      cpu: 100m
+      memory: 512Mi  # Reduced to make room for SQL Server
     limits:
-      cpu: 1000m
-      memory: 2Gi
+      cpu: 500m
+      memory: 512Mi
+
+# Kibana reduced resources for dev
+kibana:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
 
 # Development ingress - Subdomain-based routing
 # Each service gets its own subdomain for cleaner access
