@@ -21,6 +21,20 @@ spec:
         {{- include "eshop.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: kibana
     spec:
+      # Wait for Elasticsearch to be ready before starting Kibana
+      initContainers:
+      - name: wait-for-elasticsearch
+        image: busybox:1.36
+        command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for Elasticsearch to be ready..."
+            until wget -q -O- {{ include "eshop.elasticsearchUrl" . }}/_cluster/health 2>/dev/null | grep -q '"status"'; do
+              echo "Elasticsearch not ready, waiting 10 seconds..."
+              sleep 10
+            done
+            echo "Elasticsearch is ready!"
       containers:
       - name: kibana
         image: {{ .Values.kibana.image }}
