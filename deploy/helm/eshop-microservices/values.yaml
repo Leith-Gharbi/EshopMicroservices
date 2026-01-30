@@ -225,25 +225,48 @@ kibana:
       memory: 2Gi
 
 # Ingress configuration for IBM Cloud IKS
+# To get your Ingress subdomain: ibmcloud ks cluster get --cluster $IKS_CLUSTER_NAME | grep "Ingress Subdomain"
+# Uses subdomain-based routing: eshop.*, api.*, health.*
 ingress:
   enabled: true
   className: public-iks-k8s-nginx
   annotations:
     kubernetes.io/ingress.class: "public-iks-k8s-nginx"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    ingress.bluemix.net/redirect-to-https: "True"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
   hosts:
-    - host: eshop.yourcompany.com
+    # Shopping Web UI
+    - host: eshop.CLUSTER_SUBDOMAIN
+      paths:
+        - path: /
+          pathType: Prefix
+          service: shopping-web
+          port: 8080
+    # API Gateway (YARP)
+    - host: api.CLUSTER_SUBDOMAIN
       paths:
         - path: /
           pathType: Prefix
           service: yarp-gateway
-          port: 80
+          port: 8080
+    # Health Dashboard
+    - host: health.CLUSTER_SUBDOMAIN
+      paths:
+        - path: /
+          pathType: Prefix
+          service: healthdeck-web
+          port: 8080
+    # Kibana (Logs Dashboard)
+    - host: kibana.CLUSTER_SUBDOMAIN
+      paths:
+        - path: /
+          pathType: Prefix
+          service: kibana
+          port: 5601
   tls:
     enabled: false
     secretName: eshop-tls
-    hosts:
-      - eshop.yourcompany.com
 
 # Horizontal Pod Autoscaler configuration
 autoscaling:

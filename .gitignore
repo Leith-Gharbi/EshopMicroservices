@@ -420,3 +420,5 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+src/Services/Discount/Discount.Grpc/discountdb
+src/Services/Discount/Discount.Grpc/discountdb
