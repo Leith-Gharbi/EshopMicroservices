@@ -1,24 +1,53 @@
 #!/bin/bash
 # Deploy to Development environment (eshop-dev namespace)
 # This script mirrors the GitLab CI/CD deploy:dev stage for local deployment
+#
+# Usage (from Git Bash on Windows or bash on Linux/Mac):
+#   ./scripts/deploy-dev.sh [image-tag]
+#
+# Example:
+#   ./scripts/deploy-dev.sh latest
+#   ./scripts/deploy-dev.sh abc123def
 
+echo "========================================="
+echo "EshopMicroservices - Development Deployment"
+echo "========================================="
+echo ""
+echo "Starting at: $(date)"
+echo "Shell: $SHELL"
+echo "Bash version: $BASH_VERSION"
+echo ""
+
+# Exit on error, but show where it failed
 set -e
 set -o pipefail
 
-# Trap errors to show where the script failed
-trap 'echo "ERROR: Script failed at line $LINENO with exit code $?"' ERR
+# Trap errors to show where the script failed and pause
+trap 'echo ""; echo "ERROR: Script failed at line $LINENO with exit code $?"; echo "Press Enter to exit..."; read -r' ERR
 
 # Get the directory where the script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-echo "========================================="
-echo "Deploying EshopMicroservices to Development"
-echo "========================================="
 echo "Script directory: $SCRIPT_DIR"
 echo "Project root: $PROJECT_ROOT"
+echo ""
 
-# Configuration
+# Load .env file FIRST if exists
+if [ -f "$SCRIPT_DIR/.env" ]; then
+  echo "Loading environment variables from .env file..."
+  set -a  # automatically export all variables
+  source "$SCRIPT_DIR/.env"
+  set +a
+  echo "  .env file loaded successfully"
+else
+  echo "No .env file found at $SCRIPT_DIR/.env"
+  echo "You can create one from .env.example:"
+  echo "  cp scripts/.env.example scripts/.env"
+  echo ""
+fi
+
+# Configuration (after loading .env)
 CLUSTER_NAME="${IKS_CLUSTER_NAME:-lgharbi-eshop-cluster-k8s}"
 NAMESPACE="eshop-dev"
 RELEASE_NAME="eshop-dev"
@@ -33,29 +62,35 @@ if [ -z "$IBM_CLOUD_API_KEY" ]; then
   echo "ERROR: IBM_CLOUD_API_KEY environment variable is not set"
   echo "========================================="
   echo ""
-  echo "Please set your IBM Cloud API key:"
+  echo "Please set your IBM Cloud API key using one of these methods:"
+  echo ""
+  echo "Option 1: Create a .env file in scripts directory:"
+  echo "  cp scripts/.env.example scripts/.env"
+  echo "  # Then edit scripts/.env and add your API key"
+  echo ""
+  echo "Option 2: Export the variable before running:"
   echo "  export IBM_CLOUD_API_KEY='your-api-key'"
+  echo "  ./scripts/deploy-dev.sh"
   echo ""
-  echo "Or create a .env file in the scripts directory with:"
-  echo "  IBM_CLOUD_API_KEY=your-api-key"
+  echo "Get your API key from: https://cloud.ibm.com/iam/apikeys"
   echo ""
+  echo "Press Enter to exit..."
+  read -r
   exit 1
-fi
-
-# Load .env file if exists
-if [ -f "$SCRIPT_DIR/.env" ]; then
-  echo "Loading environment variables from .env file..."
-  export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
 fi
 
 # Verify helm chart exists
 if [ ! -d "$HELM_CHART_PATH" ]; then
   echo "ERROR: Helm chart not found at $HELM_CHART_PATH"
+  echo "Press Enter to exit..."
+  read -r
   exit 1
 fi
 
 if [ ! -f "$HELM_CHART_PATH/values-dev.yaml" ]; then
   echo "ERROR: values-dev.yaml not found at $HELM_CHART_PATH/values-dev.yaml"
+  echo "Press Enter to exit..."
+  read -r
   exit 1
 fi
 
@@ -66,20 +101,34 @@ echo "  Namespace: $NAMESPACE"
 echo "  Helm chart: $HELM_CHART_PATH"
 echo "  Image tag: $IMAGE_TAG"
 echo "  Registry: $ICR_REGISTRY/$ICR_NAMESPACE"
+echo "  API Key: ***${IBM_CLOUD_API_KEY: -4}"
+echo ""
+
+# Check required tools
+echo "Checking required tools..."
+for cmd in ibmcloud kubectl helm; do
+  if ! command -v $cmd &> /dev/null; then
+    echo "ERROR: $cmd is not installed or not in PATH"
+    echo "Press Enter to exit..."
+    read -r
+    exit 1
+  fi
+  echo "  $cmd: OK"
+done
 echo ""
 
 # =========================================
 # Step 1: Login to IBM Cloud
 # =========================================
 echo "Step 1: Logging in to IBM Cloud..."
-ibmcloud login --apikey $IBM_CLOUD_API_KEY -r ${IBM_CLOUD_REGION:-eu-de} -g ${IBM_CLOUD_RESOURCE_GROUP:-default} --quiet
+ibmcloud login --apikey "$IBM_CLOUD_API_KEY" -r "${IBM_CLOUD_REGION:-eu-de}" -g "${IBM_CLOUD_RESOURCE_GROUP:-default}" --quiet
 
 # =========================================
 # Step 2: Configure kubectl for IKS cluster
 # =========================================
 echo ""
 echo "Step 2: Configuring kubectl for cluster: $CLUSTER_NAME"
-ibmcloud ks cluster config --cluster $CLUSTER_NAME
+ibmcloud ks cluster config --cluster "$CLUSTER_NAME"
 
 # Verify connection
 echo "Verifying cluster connection..."
@@ -90,7 +139,7 @@ kubectl get nodes
 # =========================================
 echo ""
 echo "Step 3: Creating namespace $NAMESPACE (if not exists)..."
-kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
 # =========================================
 # Step 4: Create ImagePullSecret for IBM Container Registry
@@ -98,10 +147,10 @@ kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f 
 echo ""
 echo "Step 4: Creating ImagePullSecret for IBM Container Registry..."
 kubectl create secret docker-registry icr-secret \
-  --docker-server=$ICR_REGISTRY \
+  --docker-server="$ICR_REGISTRY" \
   --docker-username=iamapikey \
-  --docker-password=$IBM_CLOUD_API_KEY \
-  --namespace=$NAMESPACE \
+  --docker-password="$IBM_CLOUD_API_KEY" \
+  --namespace="$NAMESPACE" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "ImagePullSecret 'icr-secret' created/updated in namespace $NAMESPACE"
@@ -114,11 +163,11 @@ echo "Step 5: Checking for stuck Helm releases..."
 
 # Check if jq is installed
 if command -v jq &> /dev/null; then
-  RELEASE_STATUS=$(helm status $RELEASE_NAME -n $NAMESPACE -o json 2>/dev/null | jq -r '.info.status' || echo "not-found")
+  RELEASE_STATUS=$(helm status "$RELEASE_NAME" -n "$NAMESPACE" -o json 2>/dev/null | jq -r '.info.status' || echo "not-found")
 
   if [ "$RELEASE_STATUS" = "pending-install" ] || [ "$RELEASE_STATUS" = "pending-upgrade" ] || [ "$RELEASE_STATUS" = "pending-rollback" ]; then
     echo "WARNING: Release is stuck in '$RELEASE_STATUS' state. Attempting rollback..."
-    helm rollback $RELEASE_NAME -n $NAMESPACE || helm uninstall $RELEASE_NAME -n $NAMESPACE --no-hooks || true
+    helm rollback "$RELEASE_NAME" -n "$NAMESPACE" || helm uninstall "$RELEASE_NAME" -n "$NAMESPACE" --no-hooks || true
     echo "Rollback completed."
   elif [ "$RELEASE_STATUS" = "not-found" ]; then
     echo "No existing release found. Will perform fresh install."
@@ -127,7 +176,7 @@ if command -v jq &> /dev/null; then
   fi
 else
   echo "jq not installed, skipping stuck release detection"
-  echo "Install jq for better release status handling: brew install jq (macOS) or apt install jq (Linux)"
+  echo "Install jq for better release status handling"
 fi
 
 # =========================================
@@ -141,18 +190,21 @@ echo ""
 DEPLOYMENT_TIMESTAMP=$(date +%s)
 
 echo "Running helm upgrade..."
-helm upgrade --install $RELEASE_NAME $HELM_CHART_PATH \
-  --namespace $NAMESPACE \
+set +e  # Temporarily disable exit on error to capture the exit code
+helm upgrade --install "$RELEASE_NAME" "$HELM_CHART_PATH" \
+  --namespace "$NAMESPACE" \
   --create-namespace \
-  --values $HELM_CHART_PATH/values-dev.yaml \
-  --set global.imageTag=$IMAGE_TAG \
-  --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE \
-  --set global.imagePullSecrets[0].name=icr-secret \
-  --set global.deploymentTimestamp=$DEPLOYMENT_TIMESTAMP \
+  --values "$HELM_CHART_PATH/values-dev.yaml" \
+  --set global.imageTag="$IMAGE_TAG" \
+  --set global.imageRegistry="$ICR_REGISTRY/$ICR_NAMESPACE" \
+  --set "global.imagePullSecrets[0].name=icr-secret" \
+  --set global.deploymentTimestamp="$DEPLOYMENT_TIMESTAMP" \
   --wait --timeout 15m \
   --debug 2>&1 | tee helm-deploy.log
 
 HELM_EXIT_CODE=${PIPESTATUS[0]}
+set -e  # Re-enable exit on error
+
 if [ $HELM_EXIT_CODE -ne 0 ]; then
   echo ""
   echo "========================================="
@@ -161,10 +213,10 @@ if [ $HELM_EXIT_CODE -ne 0 ]; then
   echo "Check helm-deploy.log for details"
   echo ""
   echo "Checking pod status..."
-  kubectl get pods -n $NAMESPACE 2>/dev/null || true
+  kubectl get pods -n "$NAMESPACE" 2>/dev/null || true
   echo ""
   echo "Recent events:"
-  kubectl get events -n $NAMESPACE --sort-by='.lastTimestamp' 2>/dev/null | tail -20 || true
+  kubectl get events -n "$NAMESPACE" --sort-by='.lastTimestamp' 2>/dev/null | tail -20 || true
   echo ""
   echo "Press Enter to exit..."
   read -r
@@ -180,29 +232,29 @@ echo "Deployment Complete!"
 echo "========================================="
 echo ""
 echo "Pods:"
-kubectl get pods -n $NAMESPACE
+kubectl get pods -n "$NAMESPACE"
 echo ""
 echo "Services:"
-kubectl get svc -n $NAMESPACE
+kubectl get svc -n "$NAMESPACE"
 echo ""
 echo "Ingress:"
-kubectl get ingress -n $NAMESPACE
+kubectl get ingress -n "$NAMESPACE"
 echo ""
 echo "========================================="
 echo "Access URLs (Development):"
 echo "========================================="
 echo ""
-echo "Shopping Web:    http://eshop-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud"
-echo "API Gateway:     http://api-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud"
+echo "Shopping Web:     http://eshop-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud"
+echo "API Gateway:      http://api-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud"
 echo "Health Dashboard: http://health-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud"
-echo "Kibana:          http://kibana-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud"
+echo "Kibana:           http://kibana-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud"
 echo ""
 echo "========================================="
 echo "Useful Commands:"
 echo "========================================="
 echo ""
 echo "View logs:"
-echo "  kubectl logs -f deployment/$RELEASE_NAME-catalog-api -n $NAMESPACE"
+echo "  kubectl logs -f deployment/$RELEASE_NAME-eshop-microservices-catalog-api -n $NAMESPACE"
 echo ""
 echo "Describe pod:"
 echo "  kubectl describe pod -n $NAMESPACE <pod-name>"
@@ -216,3 +268,9 @@ echo ""
 echo "Uninstall:"
 echo "  helm uninstall $RELEASE_NAME -n $NAMESPACE"
 echo ""
+echo "========================================="
+echo "Deployment finished at: $(date)"
+echo "========================================="
+echo ""
+echo "Press Enter to close this window..."
+read -r
