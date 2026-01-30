@@ -107,15 +107,15 @@ elasticsearch:
       cpu: 1000m
       memory: 2Gi
 
-# Kibana 
+# Kibana - requires minimum 1GB RAM for Kibana 8.x
 kibana:
   resources:
     requests:
-      cpu: 50m
-      memory: 256Mi
-    limits:
-      cpu: 200m
+      cpu: 100m
       memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
 
 # Development ingress - Subdomain-based routing
 # Each service gets its own subdomain for cleaner access

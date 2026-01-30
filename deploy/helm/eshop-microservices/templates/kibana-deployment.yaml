@@ -30,11 +30,20 @@ spec:
           - -c
           - |
             echo "Waiting for Elasticsearch to be ready..."
-            until wget -q -O- {{ include "eshop.elasticsearchUrl" . }}/_cluster/health 2>/dev/null | grep -q '"status"'; do
-              echo "Elasticsearch not ready, waiting 10 seconds..."
-              sleep 10
+            RETRIES=0
+            MAX_RETRIES=60
+            while [ $RETRIES -lt $MAX_RETRIES ]; do
+              HEALTH=$(wget -q -O- {{ include "eshop.elasticsearchUrl" . }}/_cluster/health 2>/dev/null || echo "")
+              if echo "$HEALTH" | grep -q '"status":"green"\|"status":"yellow"'; then
+                echo "Elasticsearch is ready! Status: $(echo $HEALTH | grep -o '"status":"[^"]*"')"
+                exit 0
+              fi
+              RETRIES=$((RETRIES + 1))
+              echo "Elasticsearch not ready (attempt $RETRIES/$MAX_RETRIES), waiting 5 seconds..."
+              sleep 5
             done
-            echo "Elasticsearch is ready!"
+            echo "ERROR: Elasticsearch did not become ready in time"
+            exit 1
       containers:
       - name: kibana
         image: {{ .Values.kibana.image }}
@@ -49,13 +58,14 @@ spec:
         resources:
           {{- toYaml .Values.kibana.resources | nindent 10 }}
         # Startup probe - gives Kibana time to fully initialize before liveness/readiness kick in
+        # Kibana 8.x takes 60-120 seconds to fully initialize
         startupProbe:
           httpGet:
             path: /api/status
             port: http
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           periodSeconds: 10
-          timeoutSeconds: 5
+          timeoutSeconds: 10
           failureThreshold: 30
         livenessProbe:
           httpGet:

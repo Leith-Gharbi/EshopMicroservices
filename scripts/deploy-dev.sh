@@ -1,5 +1,6 @@
 #!/bin/bash
 # Deploy to Development environment (eshop-dev namespace)
+# This script mirrors the GitLab CI/CD deploy:dev stage for local deployment
 
 set -e
 set -o pipefail
@@ -18,10 +19,34 @@ echo "Script directory: $SCRIPT_DIR"
 echo "Project root: $PROJECT_ROOT"
 
 # Configuration
-CLUSTER_NAME="lgharbi-eshop-cluster-k8s"
+CLUSTER_NAME="${IKS_CLUSTER_NAME:-lgharbi-eshop-cluster-k8s}"
 NAMESPACE="eshop-dev"
+RELEASE_NAME="eshop-dev"
 HELM_CHART_PATH="$PROJECT_ROOT/deploy/helm/eshop-microservices"
 IMAGE_TAG="${1:-latest}"
+ICR_REGISTRY="${ICR_REGISTRY:-de.icr.io}"
+ICR_NAMESPACE="${ICR_NAMESPACE:-eshop-images}"
+
+# Check for required environment variable
+if [ -z "$IBM_CLOUD_API_KEY" ]; then
+  echo "========================================="
+  echo "ERROR: IBM_CLOUD_API_KEY environment variable is not set"
+  echo "========================================="
+  echo ""
+  echo "Please set your IBM Cloud API key:"
+  echo "  export IBM_CLOUD_API_KEY='your-api-key'"
+  echo ""
+  echo "Or create a .env file in the scripts directory with:"
+  echo "  IBM_CLOUD_API_KEY=your-api-key"
+  echo ""
+  exit 1
+fi
+
+# Load .env file if exists
+if [ -f "$SCRIPT_DIR/.env" ]; then
+  echo "Loading environment variables from .env file..."
+  export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
+fi
 
 # Verify helm chart exists
 if [ ! -d "$HELM_CHART_PATH" ]; then
@@ -34,33 +59,96 @@ if [ ! -f "$HELM_CHART_PATH/values-dev.yaml" ]; then
   exit 1
 fi
 
-echo "Helm chart path: $HELM_CHART_PATH"
+echo ""
+echo "Configuration:"
+echo "  Cluster: $CLUSTER_NAME"
+echo "  Namespace: $NAMESPACE"
+echo "  Helm chart: $HELM_CHART_PATH"
+echo "  Image tag: $IMAGE_TAG"
+echo "  Registry: $ICR_REGISTRY/$ICR_NAMESPACE"
+echo ""
 
-# Login to IBM Cloud (optional - uncomment if needed)
-# echo "Logging in to IBM Cloud..."
-# ibmcloud login --apikey $IBM_CLOUD_API_KEY -r us-south -g default
+# =========================================
+# Step 1: Login to IBM Cloud
+# =========================================
+echo "Step 1: Logging in to IBM Cloud..."
+ibmcloud login --apikey $IBM_CLOUD_API_KEY -r ${IBM_CLOUD_REGION:-eu-de} -g ${IBM_CLOUD_RESOURCE_GROUP:-default} --quiet
 
-# Configure kubectl for IKS cluster
-echo "Configuring kubectl for cluster: $CLUSTER_NAME"
+# =========================================
+# Step 2: Configure kubectl for IKS cluster
+# =========================================
+echo ""
+echo "Step 2: Configuring kubectl for cluster: $CLUSTER_NAME"
 ibmcloud ks cluster config --cluster $CLUSTER_NAME
 
 # Verify connection
 echo "Verifying cluster connection..."
 kubectl get nodes
 
-# Deploy with Helm
+# =========================================
+# Step 3: Create namespace (if not exists)
+# =========================================
 echo ""
-echo "Deploying Helm chart to namespace: $NAMESPACE"
-echo "Image tag: $IMAGE_TAG"
+echo "Step 3: Creating namespace $NAMESPACE (if not exists)..."
+kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+
+# =========================================
+# Step 4: Create ImagePullSecret for IBM Container Registry
+# =========================================
+echo ""
+echo "Step 4: Creating ImagePullSecret for IBM Container Registry..."
+kubectl create secret docker-registry icr-secret \
+  --docker-server=$ICR_REGISTRY \
+  --docker-username=iamapikey \
+  --docker-password=$IBM_CLOUD_API_KEY \
+  --namespace=$NAMESPACE \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+echo "ImagePullSecret 'icr-secret' created/updated in namespace $NAMESPACE"
+
+# =========================================
+# Step 5: Check and fix stuck Helm releases
+# =========================================
+echo ""
+echo "Step 5: Checking for stuck Helm releases..."
+
+# Check if jq is installed
+if command -v jq &> /dev/null; then
+  RELEASE_STATUS=$(helm status $RELEASE_NAME -n $NAMESPACE -o json 2>/dev/null | jq -r '.info.status' || echo "not-found")
+
+  if [ "$RELEASE_STATUS" = "pending-install" ] || [ "$RELEASE_STATUS" = "pending-upgrade" ] || [ "$RELEASE_STATUS" = "pending-rollback" ]; then
+    echo "WARNING: Release is stuck in '$RELEASE_STATUS' state. Attempting rollback..."
+    helm rollback $RELEASE_NAME -n $NAMESPACE || helm uninstall $RELEASE_NAME -n $NAMESPACE --no-hooks || true
+    echo "Rollback completed."
+  elif [ "$RELEASE_STATUS" = "not-found" ]; then
+    echo "No existing release found. Will perform fresh install."
+  else
+    echo "Release status: $RELEASE_STATUS (OK)"
+  fi
+else
+  echo "jq not installed, skipping stuck release detection"
+  echo "Install jq for better release status handling: brew install jq (macOS) or apt install jq (Linux)"
+fi
+
+# =========================================
+# Step 6: Deploy with Helm
+# =========================================
+echo ""
+echo "Step 6: Deploying Helm chart to namespace: $NAMESPACE"
+echo "========================================="
 echo ""
 
+DEPLOYMENT_TIMESTAMP=$(date +%s)
+
 echo "Running helm upgrade..."
-helm upgrade --install eshop-dev $HELM_CHART_PATH \
+helm upgrade --install $RELEASE_NAME $HELM_CHART_PATH \
   --namespace $NAMESPACE \
   --create-namespace \
   --values $HELM_CHART_PATH/values-dev.yaml \
   --set global.imageTag=$IMAGE_TAG \
-  --set global.imageRegistry=de.icr.io/eshop-images \
+  --set global.imageRegistry=$ICR_REGISTRY/$ICR_NAMESPACE \
+  --set global.imagePullSecrets[0].name=icr-secret \
+  --set global.deploymentTimestamp=$DEPLOYMENT_TIMESTAMP \
   --wait --timeout 15m \
   --debug 2>&1 | tee helm-deploy.log
 
@@ -83,7 +171,9 @@ if [ $HELM_EXIT_CODE -ne 0 ]; then
   exit $HELM_EXIT_CODE
 fi
 
-# Display deployment status
+# =========================================
+# Step 7: Display deployment status
+# =========================================
 echo ""
 echo "========================================="
 echo "Deployment Complete!"
@@ -98,9 +188,31 @@ echo ""
 echo "Ingress:"
 kubectl get ingress -n $NAMESPACE
 echo ""
-echo "To view logs:"
-echo "  kubectl logs -f deployment/eshop-dev-catalog-api -n $NAMESPACE"
+echo "========================================="
+echo "Access URLs (Development):"
+echo "========================================="
 echo ""
-echo "To access the application:"
-echo "  kubectl port-forward svc/eshop-dev-yarp-gateway 8080:80 -n $NAMESPACE"
-echo "  Then visit: http://localhost:8080"
+echo "Shopping Web:    http://eshop-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud"
+echo "API Gateway:     http://api-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud"
+echo "Health Dashboard: http://health-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud"
+echo "Kibana:          http://kibana-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud"
+echo ""
+echo "========================================="
+echo "Useful Commands:"
+echo "========================================="
+echo ""
+echo "View logs:"
+echo "  kubectl logs -f deployment/$RELEASE_NAME-catalog-api -n $NAMESPACE"
+echo ""
+echo "Describe pod:"
+echo "  kubectl describe pod -n $NAMESPACE <pod-name>"
+echo ""
+echo "Get events:"
+echo "  kubectl get events -n $NAMESPACE --sort-by='.lastTimestamp'"
+echo ""
+echo "Rollback deployment:"
+echo "  helm rollback $RELEASE_NAME -n $NAMESPACE"
+echo ""
+echo "Uninstall:"
+echo "  helm uninstall $RELEASE_NAME -n $NAMESPACE"
+echo ""
