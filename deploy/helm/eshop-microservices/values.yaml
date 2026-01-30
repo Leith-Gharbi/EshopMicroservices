@@ -237,28 +237,28 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
   hosts:
     # Shopping Web UI
-    - host: eshop.CLUSTER_SUBDOMAIN
+    - host: eshop-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud
       paths:
         - path: /
           pathType: Prefix
           service: shopping-web
           port: 80
     # API Gateway (YARP)
-    - host: api.CLUSTER_SUBDOMAIN
+    - host: api-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud
       paths:
         - path: /
           pathType: Prefix
           service: yarp-gateway
           port: 80
     # Health Dashboard
-    - host: health.CLUSTER_SUBDOMAIN
+    - host: health-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud
       paths:
         - path: /
           pathType: Prefix
           service: healthdeck-web
           port: 80
     # Kibana (Logs Dashboard)
-    - host: kibana.CLUSTER_SUBDOMAIN
+    - host: kibana-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud
       paths:
         - path: /
           pathType: Prefix

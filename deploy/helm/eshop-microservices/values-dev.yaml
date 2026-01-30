@@ -112,28 +112,28 @@ ingress:
   enabled: true
   hosts:
     # Shopping Web UI
-    - host: eshop.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud
+    - host: eshop-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud
       paths:
         - path: /
           pathType: Prefix
           service: shopping-web
           port: 80
     # API Gateway (YARP)
-    - host: api.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud
+    - host: api-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud
       paths:
         - path: /
           pathType: Prefix
           service: yarp-gateway
           port: 80
     # Health Dashboard
-    - host: health.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud
+    - host: health-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud
       paths:
         - path: /
           pathType: Prefix
           service: healthdeck-web
           port: 80
     # Kibana (Logs Dashboard)
-    - host: kibana.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud
+    - host: kibana-dev.lgharbi-eshop-cluster-k8s-8a833d5c3d6a9b7ed1b32c0af11fc140-0000.eu-de.containers.appdomain.cloud
       paths:
         - path: /
           pathType: Prefix
