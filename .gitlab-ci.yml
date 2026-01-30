@@ -432,12 +432,13 @@ cleanup:registry:
     - echo "Registry quota usage:"
     - ibmcloud cr quota
   rules:
-    # Run after successful deployment to dev
+    # Run automatically after successful deployment, or manually on failure
     - if: '$CI_COMMIT_BRANCH =~ /^(feat|fix|chore)\//'
-      when: on_success
-    # Run after successful deployment to staging
+      when: always
+      allow_failure: true
     - if: '$CI_COMMIT_BRANCH =~ /^(dev|develop)$/'
-      when: on_success
-    # Can be triggered manually anytime
+      when: always
+      allow_failure: true
+    # Can be triggered manually for other branches
     - when: manual
       allow_failure: true
